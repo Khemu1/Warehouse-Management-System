@@ -2,10 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Roles } from '@/auth/types';
+import { Roles } from '@/types';
 
 @Entity('users')
 export class Users {
@@ -25,8 +26,9 @@ export class Users {
   role: Roles;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updated_at!: Date;
+  updated_at: Date;
+
 }
