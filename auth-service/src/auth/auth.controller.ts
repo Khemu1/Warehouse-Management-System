@@ -13,7 +13,7 @@ export class AuthController {
     private jwtService: JwtService,
   ) {}
 
-  @MessagePattern('createAuth')
+  @MessagePattern('RegisterAuth')
   async create(@Payload() createAuthDto: CreateAuthDto) {
     const user = await this.authService.create(createAuthDto);
     const token = await this.jwtService.signAsync({
