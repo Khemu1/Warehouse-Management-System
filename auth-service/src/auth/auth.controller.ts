@@ -1,35 +1,41 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Serialize } from '@shared/interceptors/serialize.interceptors';
+import { AuthDto, CreateAuthDto, LoginAuthDto } from './dto/auth.dtos';
+import { JwtService } from '@nestjs/jwt';
 
+@Serialize(AuthDto)
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private jwtService: JwtService,
+  ) {}
 
   @MessagePattern('createAuth')
-  create(@Payload() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  async create(@Payload() createAuthDto: CreateAuthDto) {
+    const user = await this.authService.create(createAuthDto);
+    const token = await this.jwtService.signAsync({
+      user_id: user.id,
+      role: user.role,
+    });
+    return {
+      ...user,
+      token,
+    };
   }
 
-  @MessagePattern('findAllAuth')
-  findAll() {
-    return this.authService.findAll();
-  }
-
-  @MessagePattern('findOneAuth')
-  findOne(@Payload() id: number) {
-    return this.authService.findOne(id);
-  }
-
-  @MessagePattern('updateAuth')
-  update(@Payload() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(updateAuthDto.id, updateAuthDto);
-  }
-
-  @MessagePattern('removeAuth')
-  remove(@Payload() id: number) {
-    return this.authService.remove(id);
+  @MessagePattern('loginAuth')
+  async loginUser(@Payload() loginAuthDto: LoginAuthDto) {
+    const user = await this.authService.login(loginAuthDto);
+    const token = await this.jwtService.signAsync({
+      user_id: user.id,
+      role: user.role,
+    });
+    return {
+      ...user,
+      token,
+    };
   }
 }

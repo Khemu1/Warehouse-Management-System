@@ -1,29 +1,43 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from '@shared/entities/users.entity';
 import { Repository } from 'typeorm';
+import { CreateAuthDto, LoginAuthDto } from './dto/auth.dtos';
+import { comparePassword, hashPassword } from './auth.helpers';
 
 @Injectable()
 export class AuthService {
   constructor(@InjectRepository(Users) private repo: Repository<Users>) {}
 
-  create(createAuthDto: CreateAuthDto) {}
-
-  findAll() {
-    return `This action returns all auth`;
+  async create(createAuthDto: CreateAuthDto) {
+    const hashedPassword = await hashPassword(createAuthDto.password);
+    createAuthDto.password = hashedPassword;
+    const createdUser = this.repo.save(createAuthDto, {
+      transaction: true,
+    });
+    return {
+      ...createdUser,
+      password: undefined,
+      created_at: undefined,
+      updated_at: undefined,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async login(loginAuthDto: LoginAuthDto) {
+    const user = await this.repo.findOne({
+      where: {
+        email: loginAuthDto.email,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('Invalid Credentials');
+    }
+    await comparePassword(loginAuthDto.password, user.password);
+    return {
+      ...user,
+      password: undefined,
+      created_at: undefined,
+      updated_at: undefined,
+    };
   }
 }

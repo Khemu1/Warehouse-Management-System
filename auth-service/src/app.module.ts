@@ -21,7 +21,7 @@ import { CustomError } from '@shared/filters/CustomError';
   ],
   providers: [
     {
-      provide: APP_PIPE, // ✅ Fixed Token
+      provide: APP_PIPE, 
       useValue: new ValidationPipe({
         transform: true,
         whitelist: true,
