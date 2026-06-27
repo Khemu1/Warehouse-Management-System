@@ -30,20 +30,11 @@ export class AuthService {
   }
 
   async login(loginAuthDto: LoginAuthDto) {
-    console.log('loginAuthDto', loginAuthDto);
-    const rawUser = await this.repo.query(
-      'SELECT * FROM users WHERE email = $1',
-      [loginAuthDto.email],
-    );
-    console.log('raw:', rawUser);
-
     const user = await this.repo.findOne({
       where: {
         email: loginAuthDto.email,
       },
     });
-    console.log('findOne:', user);
-
     if (!user) {
       throw new NotFoundException('Invalid Credentials');
     }

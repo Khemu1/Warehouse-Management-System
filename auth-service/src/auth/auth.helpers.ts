@@ -17,7 +17,6 @@ export const comparePassword = async (
   password: string,
   hashedPassword: string,
 ) => {
-  console.log('comparePassword', password, hashedPassword);
   const [salt, storedHash] = hashedPassword.split('.');
   const hash = (await scrypt(password, salt, 32)) as Buffer;
   if (storedHash !== hash.toString('hex')) {
