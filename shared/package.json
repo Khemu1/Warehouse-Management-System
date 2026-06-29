@@ -13,7 +13,10 @@
     "migration:revert:prod": "npm run typeorm:prod -- migration:revert",
     "migration:revert:dev": "npm run typeorm -- migration:revert",
     "migration:generate:prod": "cross-env NODE_ENV=production typeorm-ts-node-commonjs -d src/config/db/data-source.prod.ts migration:generate src/migrations/initial-schema",
-    "migration:generate:dev": "cross-env NODE_ENV=development npm run typeorm -- migration:generate src/migrations/"
+    "migration:generate:dev": "cross-env NODE_ENV=development npm run typeorm -- migration:generate src/config/db/migrations/",
+    "seed:run:dev": "cross-env NODE_ENV=development ts-node src/config/db/run-seeds.ts",
+    "seed:run:prod": "cross-env NODE_ENV=production node dist/src/config/db/run-seeds.js",
+    "seed:create": "cross-env NODE_ENV=development ts-node src/config/db/create-seed.ts"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.1",
@@ -38,6 +41,7 @@
     "express": "^5.2.1",
     "pg": "^8.22.0",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0"
+    "tsconfig-paths": "^4.2.0",
+    "typeorm-extension": "^3.9.0"
   }
 }

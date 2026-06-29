@@ -2,8 +2,9 @@ import "reflect-metadata";
 import { config } from "dotenv";
 import { join } from "path";
 import { cwd } from "process";
-import { DataSource } from "typeorm";
 import { register } from "tsconfig-paths";
+import { DataSource, DataSourceOptions } from "typeorm";
+import { SeederOptions } from "typeorm-extension";
 
 // Register ALL path aliases
 register({
@@ -21,11 +22,11 @@ register({
 config({ path: join(cwd(), ".env.development") });
 
 console.log("shared database config started ", process.env.DATABASE_URL);
-console.log("migrations path:", join(cwd(), "src/migrations/*{.ts,.js}"));
 
-export const appDataSource = new DataSource({
+const options: DataSourceOptions & SeederOptions = {
   type: "postgres",
   url: process.env.DATABASE_URL,
+
   entities: [
     join(cwd(), "src/**/*.entity{.ts,.js}"),
     join(cwd(), "../auth-service/src/**/*.entity{.ts,.js}"),
@@ -33,6 +34,14 @@ export const appDataSource = new DataSource({
     join(cwd(), "../events-service/src/**/*.entity{.ts,.js}"),
     join(cwd(), "../payment-service/src/**/*.entity{.ts,.js}"),
   ],
-  migrations: [join(cwd(), "src/migrations/*{.ts,.js}")],
+  migrations: [join(cwd(), "src/config/db/migrations/*{.ts,.js}")],
+
+  seeds: [
+    join(cwd(), "../auth-service/src/seeds/**/*.seeder{.ts,.js}"),
+    join(cwd(), "../events-service/src/seeds/**/*.seeder{.ts,.js}"),
+  ],
+
   synchronize: false,
-});
+};
+
+export const appDataSource = new DataSource(options);

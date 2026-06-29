@@ -13,7 +13,7 @@
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "rootDir": ".",
+    "rootDir": "..",
     "paths": {
       "@/*": ["./src/*"],
       "@bookings/*": ["../booking-service/src/*"],
@@ -22,6 +22,11 @@
       "@payments/*": ["../payment-service/src/*"]
     },
     "sourceMap": false
+  },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"],
+    "transpileOnly": true,
+    "files": true
   },
   "include": ["src/**/*"],
 

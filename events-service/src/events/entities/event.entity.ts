@@ -12,11 +12,32 @@ export class Events {
   id: string;
 
   @Column('uuid', { nullable: true })
-  user_id: string;
+  organizer_id: string | null;
+
+  @Column('varchar')
+  title: string;
+
+  @Column('varchar')
+  description: string;
+
+  @Column('date')
+  date: Date;
+
+  @Column('varchar')
+  location: string;
+
+  @Column('int')
+  total_seats: number;
+
+  @Column('int')
+  available_seats: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updated_at!: Date;
+  updated_at: Date;
 }
