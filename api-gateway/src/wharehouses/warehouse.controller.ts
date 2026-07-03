@@ -8,6 +8,7 @@ import {
   Put,
   Post,
   HttpCode,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -33,7 +34,7 @@ export class WarehousesController {
   @Put(':id')
   @HttpCode(204)
   updateWarehouse(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateWarehouseDto,
     @User() user: JwtPayload,
   ) {
@@ -47,7 +48,10 @@ export class WarehousesController {
   @AllowedRoles(Roles.ADMIN)
   @Delete(':id')
   @HttpCode(204)
-  deleteWarehouse(@Param('id') id: string, @User() user: JwtPayload) {
+  deleteWarehouse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: JwtPayload,
+  ) {
     return this.inventoryClient.send('deleteWarehouse', {
       id,
       ...user,
@@ -62,7 +66,10 @@ export class WarehousesController {
 
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @Get(':id')
-  getWarehouse(@Param('id') id: string, @User() user: JwtPayload) {
+  getWarehouse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: JwtPayload,
+  ) {
     return this.inventoryClient.send('findOneWarehouse', {
       id: id,
       ...user,
