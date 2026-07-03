@@ -1,48 +1,47 @@
 import { DataSource } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
-import { Users } from '@shared/entities/users.entity';
 import { hashPassword } from '../auth/auth.helpers';
 import { Roles } from '@shared/types';
-
-export class UserSeeder implements Seeder {
+import { User } from '@shared/entities/user.entity';
+export class STAFFSeeder implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
-    const repo = dataSource.getRepository(Users);
+    const repo = dataSource.getRepository(User);
 
     const password = await hashPassword('password123');
 
     await repo.save([
       {
-        name: 'Ahmed Organizer',
+        name: 'Ahmed ADMIN',
         email: 'ahmed@test.com',
         password,
-        role: Roles.ORGANIZER,
+        role: Roles.ADMIN,
       },
       {
-        name: 'Sara Organizer',
+        name: 'Sara ADMIN',
         email: 'sara@test.com',
         password,
-        role: Roles.ORGANIZER,
+        role: Roles.ADMIN,
       },
       {
-        name: 'Ali Attendee',
+        name: 'Ali Staff',
         email: 'ali@test.com',
         password,
-        role: Roles.USER,
+        role: Roles.STAFF,
       },
       {
-        name: 'Mona Attendee',
+        name: 'Mona Staff',
         email: 'mona@test.com',
         password,
-        role: Roles.USER,
+        role: Roles.STAFF,
       },
       {
-        name: 'Omar Attendee',
+        name: 'Omar Staff',
         email: 'omar@test.com',
         password,
-        role: Roles.USER,
+        role: Roles.STAFF,
       },
     ]);
 
-    console.log('✅ Users seeded');
+    console.log('✅ STAFFs seeded');
   }
 }

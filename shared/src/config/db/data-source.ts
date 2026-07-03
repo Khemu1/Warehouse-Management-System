@@ -12,9 +12,8 @@ register({
   paths: {
     "@/*": ["src/*"],
     "@shared/*": ["src/*"],
-    "@bookings/*": ["../booking-service/src/*"],
     "@auth/*": ["../auth-service/src/*"],
-    "@events/*": ["../events-service/src/*"],
+    "@inventory/*": ["../inventory-service/src/*"],
     "@payments/*": ["../payment-service/src/*"],
   },
 });
@@ -30,15 +29,14 @@ const options: DataSourceOptions & SeederOptions = {
   entities: [
     join(cwd(), "src/**/*.entity{.ts,.js}"),
     join(cwd(), "../auth-service/src/**/*.entity{.ts,.js}"),
-    join(cwd(), "../booking-service/src/**/*.entity{.ts,.js}"),
-    join(cwd(), "../events-service/src/**/*.entity{.ts,.js}"),
+    join(cwd(), "../inventory-service/src/**/*.entity{.ts,.js}"),
     join(cwd(), "../payment-service/src/**/*.entity{.ts,.js}"),
   ],
   migrations: [join(cwd(), "src/config/db/migrations/*{.ts,.js}")],
 
   seeds: [
     join(cwd(), "../auth-service/src/seeds/**/*.seeder{.ts,.js}"),
-    join(cwd(), "../events-service/src/seeds/**/*.seeder{.ts,.js}"),
+    join(cwd(), "../inventory-service/src/seeds/**/*.seeder{.ts,.js}"),
   ],
 
   synchronize: false,

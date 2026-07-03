@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Users } from '@shared/entities/users.entity';
+import { User } from '@shared/entities/user.entity';
 import { In, Repository } from 'typeorm';
 import { CreateAuthDto, LoginAuthDto } from '@shared//dtos/auth.dtos';
 import { comparePassword, hashPassword, isEmailTaken } from './auth.helpers';
@@ -12,7 +12,7 @@ import { Roles } from '@shared/types';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectRepository(Users) private repo: Repository<Users>) {}
+  constructor(@InjectRepository(User) private repo: Repository<User>) {}
 
   async create(createAuthDto: CreateAuthDto) {
     await isEmailTaken(this.repo.manager, createAuthDto.email);
@@ -54,9 +54,7 @@ export class AuthService {
         role: In(role),
       },
     });
-    if (!user) {
-      throw new UnauthorizedException('Not authorized');
-    }
+
     return user;
   }
 }

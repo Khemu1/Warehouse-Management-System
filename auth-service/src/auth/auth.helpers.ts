@@ -1,7 +1,7 @@
 import { promisify } from 'util';
 import { scrypt as _scrypt, randomBytes } from 'crypto';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { Users } from '@shared/entities/users.entity';
+import { User } from '@shared/entities/user.entity';
 import { EntityManager } from 'typeorm';
 
 const scrypt = promisify(_scrypt);
@@ -25,7 +25,7 @@ export const comparePassword = async (
 };
 
 export const isEmailTaken = async (tx: EntityManager, email: string) => {
-  const user = await tx.findOne(Users, {
+  const user = await tx.findOne(User, {
     where: { email },
   });
   if (user) {

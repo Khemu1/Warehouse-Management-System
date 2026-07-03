@@ -1,14 +1,22 @@
-import { ROLES_KEY } from "@/decorators/roles.decorator";
-import { RequestWithUser, Roles } from "@/types";
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+// shared/src/guards/roles.guard.ts
+import {
+  Inject,
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { AuthService } from "@auth/auth/auth.service";
+import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom } from "rxjs";
+import { ROLES_KEY } from "../decorators/roles.decorator";
+import { Roles, JwtPayload } from "../types";
+import { CustomError } from "../filters/CustomError";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private userService: AuthService,
+    @Inject("AUTH_SERVICE") private authClient: ClientProxy,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -19,12 +27,29 @@ export class RolesGuard implements CanActivate {
 
     if (!allowedRoles) return true;
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const request = context.switchToHttp().getRequest();
+    const user: JwtPayload = request.user;
 
-    const foundUser = await this.userService.doesUserWithRoleExist(
-      request.user.user_id,
-      allowedRoles,
+    const foundUser = await firstValueFrom(
+      this.authClient.send("doesUserWithRoleExist", {
+        user_id: user.user_id,
+        roles: allowedRoles,
+      }),
     );
+
+    if (!foundUser) {
+      throw new CustomError(
+        "Not authenticated",
+        401,
+        "not_authenticated",
+        true,
+      );
+    }
+
+    if (!allowedRoles.includes(foundUser.role)) {
+      throw new CustomError("Not authorized", 403, "not_authorized", true);
+    }
+
     return allowedRoles.includes(foundUser.role);
   }
 }

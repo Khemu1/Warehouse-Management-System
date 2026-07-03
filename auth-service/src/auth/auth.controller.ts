@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { Serialize } from '@shared/interceptors/serialize.interceptors';
 import { AuthDto, CreateAuthDto, LoginAuthDto } from '@shared/dtos/auth.dtos';
 import { JwtService } from '@nestjs/jwt';
+import { Roles } from '@shared/types';
 
 @Serialize(AuthDto)
 @Controller()
@@ -37,5 +38,18 @@ export class AuthController {
       ...user,
       token,
     };
+  }
+
+  @MessagePattern('doesUserWithRoleExist')
+  async doesUserWithRoleExist(
+    @Payload() doesUserWithRoleExistDto: {
+      user_id: string;
+      roles: Roles[];
+    },
+  ) {
+    return this.authService.doesUserWithRoleExist(
+      doesUserWithRoleExistDto.user_id,
+      doesUserWithRoleExistDto.roles,
+    );
   }
 }

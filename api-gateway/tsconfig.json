@@ -8,9 +8,10 @@
       "@shared/*": ["../shared/src/*"],
       "@auth/*": ["../auth-service/src/*"],
       "@bookings/*": ["../booking-service/src/*"],
-      "@events/*": ["../events-service/src/*"],
+      "@events/*": ["../inventory-service/src/*"],
       "@payments/*": ["../payment-service/src/*"]
-    }
+    },
+    "emitDeclarationOnly": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test"]
