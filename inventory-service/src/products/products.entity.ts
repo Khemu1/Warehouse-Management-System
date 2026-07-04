@@ -1,7 +1,9 @@
+import { Inventory } from '../inventory/inventory.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -23,7 +25,7 @@ export class Product {
   @Column('decimal', { precision: 10, scale: 2 })
   unit_price: number;
 
-  @Column('numeric')
+  @Column('integer')
   low_stock_threshold: number;
 
   @CreateDateColumn()
@@ -31,4 +33,7 @@ export class Product {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => Inventory, (inventory) => inventory.product)
+  inventoryItems: Inventory[];
 }

@@ -9,7 +9,6 @@ export class ProductsController {
 
   @MessagePattern('createProduct')
   async createProduct(dto: CreateProductDto) {
-    console.log("MessagePattern('createProduct')");
     return await this.productsService.createProduct(dto);
   }
   @MessagePattern('updateProduct')
@@ -20,10 +19,6 @@ export class ProductsController {
   @MessagePattern('findOneProduct')
   async getProduct(data: { id: string }) {
     return await this.productsService.findOne(data.id);
-  }
-  @MessagePattern('findWharehouseProducts')
-  async getwarehouseProducts(data: { id: string }) {
-    return await this.productsService.findWarehouseProducts(data.id);
   }
 
   @MessagePattern('deleteProduct')

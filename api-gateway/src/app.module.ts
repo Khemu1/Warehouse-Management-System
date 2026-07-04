@@ -7,6 +7,7 @@ import { WarehousesModule } from './wharehouses/warehouse.module';
 import { JwtModule } from './jwt/jwt.module';
 import { AppClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
+import { InventoryModule } from './inventory/inventory.module';
 @Module({
   imports: [
     AppClientsModule,
@@ -18,6 +19,7 @@ import { ProductsModule } from './products/products.module';
     AuthModule,
     WarehousesModule,
     ProductsModule,
+    InventoryModule,
   ],
   providers: [
     {

@@ -1,7 +1,9 @@
+import { Inventory } from '../inventory/inventory.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -28,4 +30,7 @@ export class Warehouse {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => Inventory, (inventory) => inventory.warehouse)
+  inventoryItems: Inventory[];
 }

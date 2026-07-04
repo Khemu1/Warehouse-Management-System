@@ -35,7 +35,7 @@ const options: DataSourceOptions & SeederOptions = {
   migrations: [join(cwd(), "src/config/db/migrations/*{.ts,.js}")],
 
   seeds: [
-    join(cwd(), "../auth-service/src/seeds/**/*.seeder{.ts,.js}"),
+    // join(cwd(), "../auth-service/src/seeds/**/*.seeder{.ts,.js}"),
     join(cwd(), "../inventory-service/src/seeds/**/*.seeder{.ts,.js}"),
   ],
 

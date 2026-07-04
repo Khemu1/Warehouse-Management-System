@@ -68,22 +68,4 @@ export class ProductsService {
 
     return rest;
   }
-
-  async findWarehouseProducts(warehouse_id: string) {
-    return await this.repo.find({
-      where: { id: warehouse_id },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        sku: true,
-        unit_price: true,
-        low_stock_threshold: true,
-        created_at: true,
-      },
-      order: {
-        created_at: 'DESC',
-      },
-    });
-  }
 }

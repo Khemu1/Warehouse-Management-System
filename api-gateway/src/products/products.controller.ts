@@ -61,7 +61,6 @@ export class ProductsController {
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @Get(':id')
   getProduct(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
-    console.log('find one product');
     return this.inventoryClient.send('findOneProduct', {
       id: id,
       ...user,
