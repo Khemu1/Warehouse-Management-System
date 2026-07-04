@@ -1,13 +1,17 @@
+import { SafeClientProxy } from '@shared/safe-client-proxy';
 import { Global, Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-// by adding the global decorator, we can make this module available globally once it's loaded somewhere,
-// thus making it visible to all modules
+import { ClientsModule, ClientProxy, Transport } from '@nestjs/microservices';
+
+const RAW_INVENTORY = 'INVENTORY_SERVICE_RAW';
+const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
+const RAW_AUTH = 'AUTH_SERVICE_RAW';
+
 @Global()
 @Module({
   imports: [
     ClientsModule.register([
       {
-        name: 'INVENTORY_SERVICE',
+        name: RAW_INVENTORY,
         transport: Transport.RMQ,
         options: {
           urls: [process.env.RABBITMQ_URL!],
@@ -15,18 +19,34 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
       {
-        name: 'ORDERS_SERVICE',
+        name: RAW_ORDERS,
         transport: Transport.RMQ,
         options: { urls: [process.env.RABBITMQ_URL!], queue: 'orders_queue' },
       },
-
       {
-        name: 'AUTH_SERVICE',
+        name: RAW_AUTH,
         transport: Transport.RMQ,
         options: { urls: [process.env.RABBITMQ_URL!], queue: 'auth_queue' },
       },
     ]),
   ],
-  exports: [ClientsModule],
+  providers: [
+    {
+      provide: 'INVENTORY_SERVICE',
+      useFactory: (client: ClientProxy) => new SafeClientProxy(client),
+      inject: [RAW_INVENTORY],
+    },
+    {
+      provide: 'ORDERS_SERVICE',
+      useFactory: (client: ClientProxy) => new SafeClientProxy(client),
+      inject: [RAW_ORDERS],
+    },
+    {
+      provide: 'AUTH_SERVICE',
+      useFactory: (client: ClientProxy) => new SafeClientProxy(client),
+      inject: [RAW_AUTH],
+    },
+  ],
+  exports: ['INVENTORY_SERVICE', 'ORDERS_SERVICE', 'AUTH_SERVICE'],
 })
 export class AppClientsModule {}

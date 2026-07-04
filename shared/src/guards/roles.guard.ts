@@ -6,17 +6,15 @@ import {
   ExecutionContext,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { ClientProxy } from "@nestjs/microservices";
-import { firstValueFrom } from "rxjs";
 import { ROLES_KEY } from "../decorators/roles.decorator";
-import { Roles, JwtPayload } from "../types";
+import type { Roles, JwtPayload, ISafeClient } from "../types";
 import { CustomError } from "../filters/CustomError";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    @Inject("AUTH_SERVICE") private authClient: ClientProxy,
+    @Inject("AUTH_SERVICE") private authClient: ISafeClient,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,12 +28,10 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user: JwtPayload = request.user;
 
-    const foundUser = await firstValueFrom(
-      this.authClient.send("doesUserWithRoleExist", {
-        user_id: user.user_id,
-        roles: allowedRoles,
-      }),
-    );
+    const foundUser = await this.authClient.send("doesUserWithRoleExist", {
+      user_id: user.user_id,
+      roles: allowedRoles,
+    });
 
     if (!foundUser) {
       throw new CustomError(

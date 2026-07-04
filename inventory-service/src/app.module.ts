@@ -8,6 +8,7 @@ import { GlobalErrorFilter } from '@shared/filters/global-error.filter';
 import { CustomError } from '@shared/filters/CustomError';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { DatabaseModule } from './database.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { InventoryModule } from './inventory/inventory.module';
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
     }),
+    DatabaseModule,
     WarehousesModule,
     ProductsModule,
     InventoryModule,

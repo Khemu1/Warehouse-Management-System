@@ -11,7 +11,6 @@ export class WarehousesController {
 
   @MessagePattern('createWarehouse')
   async create(@Payload() createWarehouseDto: CreateWarehouseDto) {
-    console.log('createWarehouseDto', createWarehouseDto);
     return await this.WarehousesService.create(createWarehouseDto);
   }
 

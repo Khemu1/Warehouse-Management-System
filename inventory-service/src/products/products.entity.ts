@@ -17,13 +17,13 @@ export class Product {
   @Column('text')
   description: string;
 
-  @Column("text")
+  @Column('text')
   sku: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   unit_price: number;
 
-  @Column("numeric")
+  @Column('numeric')
   low_stock_threshold: number;
 
   @CreateDateColumn()

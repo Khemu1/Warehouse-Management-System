@@ -6,6 +6,7 @@ import { GlobalErrorFilter } from '@shared/filters/global-error.filter';
 import { WarehousesModule } from './wharehouses/warehouse.module';
 import { JwtModule } from './jwt/jwt.module';
 import { AppClientsModule } from './clients/clients.module';
+import { ProductsModule } from './products/products.module';
 @Module({
   imports: [
     AppClientsModule,
@@ -16,6 +17,7 @@ import { AppClientsModule } from './clients/clients.module';
     JwtModule,
     AuthModule,
     WarehousesModule,
+    ProductsModule,
   ],
   providers: [
     {
