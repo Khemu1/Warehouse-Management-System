@@ -9,6 +9,7 @@ import { AppClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { InboundOrdersModule } from './orders/inbound-orders/inbound-orders.module';
+import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -16,6 +17,7 @@ import { InboundOrdersModule } from './orders/inbound-orders/inbound-orders.modu
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     AppClientsModule,
+    HealthModule,
     JwtModule,
     AuthModule,
     WarehousesModule,

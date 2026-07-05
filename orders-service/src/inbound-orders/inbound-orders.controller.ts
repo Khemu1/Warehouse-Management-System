@@ -47,4 +47,13 @@ export class InboundOrdersController {
   ) {
     return await this.inboundOrdersService.markNeedsAttention(data);
   }
+
+  @MessagePattern('health.check')
+  checkHealth(): { status: string; service: string; timestamp: string } {
+    return {
+      status: 'ok',
+      service: 'inventory-service',
+      timestamp: new Date().toISOString(),
+    };
+  }
 }

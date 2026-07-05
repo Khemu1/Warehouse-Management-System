@@ -1,0 +1,24 @@
+FROM node:20-alpine
+WORKDIR /app
+
+COPY shared/ ./shared/
+COPY auth-service/ ./auth-service/
+COPY inventory-service/ ./inventory-service/
+# COPY payment-service/ ./payment-service/
+COPY orders-service/ ./orders-service/
+
+RUN cd auth-service && npm install
+RUN cd inventory-service && npm install
+RUN cd orders-service && npm install
+RUN cd shared && npm install
+
+# single build compiles all four services into shared/dist/<service>/src/...
+RUN cd shared && npm run build
+
+# strip source now that compiled JS exists in dist/
+RUN find /app/shared/src /app/auth-service/src /app/inventory-service/src \
+         /app/orders-service/src \
+         -type f -name "*.ts" -delete
+
+WORKDIR /app/shared
+CMD ["tail", "-f", "/dev/null"]

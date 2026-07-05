@@ -6,11 +6,17 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: khemu123456
-      POSTGRES_DB: ticketing-platform
+      POSTGRES_DB: wms-platform
     ports:
       - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wms-platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -18,17 +24,29 @@ services:
     restart: unless-stopped
     ports:
       - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: wms-rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ticketing
-      RABBITMQ_DEFAULT_PASS: ticketing123
+      RABBITMQ_DEFAULT_USER: wms
+      RABBITMQ_DEFAULT_PASS: wms123
     ports:
-      - "5673:5672"     # host:container — avoids colliding with native RabbitMQ on 5672
-      - "15673:15672"   # management UI, same reasoning
+      - "5673:5672"
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   api-gateway-service:
     build:
@@ -42,12 +60,111 @@ services:
     environment:
       DATABASE_HOST: postgres
       REDIS_HOST: redis
-      RABBITMQ_URL: amqp://ticketing:ticketing123@rabbitmq:5672
-      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/ticketing-platform
+      RABBITMQ_URL: amqp://wms:wms123@rabbitmq:5672
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
     depends_on:
-      - postgres
-      - rabbitmq
-      - redis
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3002:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+      args:
+        SERVICE_NAME: auth-service
+    container_name: wms-auth-service
+    restart: unless-stopped
+    env_file: ./auth-service/.env.development
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://wms:wms123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      api-gateway-service:
+        condition: service_healthy
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
+      args:
+        SERVICE_NAME: inventory-service
+    container_name: wms-inventory-service
+    restart: unless-stopped
+    env_file: ./inventory-service/.env.development
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://wms:wms123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api-gateway-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  orders-service:
+    build:
+      context: .
+      dockerfile: orders-service/Dockerfile
+      args:
+        SERVICE_NAME: orders-service
+    container_name: wms-orders-service
+    restart: unless-stopped
+    env_file: ./orders-service/.env.development
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://wms:wms123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api-gateway-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  migrator:
+    env_file: ./shared/.env.production
+    build:
+      context: .
+      dockerfile: shared/Dockerfile.migrate
+    environment:
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

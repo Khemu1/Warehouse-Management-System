@@ -42,14 +42,20 @@ export class AuthController {
 
   @MessagePattern('doesUserWithRoleExist')
   async doesUserWithRoleExist(
-    @Payload() doesUserWithRoleExistDto: {
-      user_id: string;
-      roles: Roles[];
-    },
+    @Payload() doesUserWithRoleExistDto: { user_id: string; roles: Roles[] },
   ) {
     return this.authService.doesUserWithRoleExist(
       doesUserWithRoleExistDto.user_id,
       doesUserWithRoleExistDto.roles,
     );
+  }
+
+  @MessagePattern('health.check')
+  checkHealth(): { status: string; service: string; timestamp: string } {
+    return {
+      status: 'ok',
+      service: 'inventory-service',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

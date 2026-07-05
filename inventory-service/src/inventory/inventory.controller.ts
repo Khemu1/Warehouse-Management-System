@@ -18,4 +18,13 @@ export class InventoryController {
   async getwarehouseProducts(data: { id: string }) {
     return await this.inventoryService.findWarehouseProducts(data.id);
   }
+
+  @MessagePattern('health.check')
+  checkHealth(): { status: string; service: string; timestamp: string } {
+    return {
+      status: 'ok',
+      service: 'inventory-service',
+      timestamp: new Date().toISOString(),
+    };
+  }
 }
