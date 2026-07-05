@@ -15,6 +15,7 @@ register({
     "@auth/*": ["../auth-service/src/*"],
     "@inventory/*": ["../inventory-service/src/*"],
     "@payments/*": ["../payment-service/src/*"],
+    "@orders/*": ["../orders-service/src/*"],
   },
 });
 
@@ -31,6 +32,7 @@ const options: DataSourceOptions & SeederOptions = {
     join(cwd(), "../auth-service/src/**/*.entity{.ts,.js}"),
     join(cwd(), "../inventory-service/src/**/*.entity{.ts,.js}"),
     join(cwd(), "../payment-service/src/**/*.entity{.ts,.js}"),
+    join(cwd(), "../orders-service/src/**/*.entity{.ts,.js}"),
   ],
   migrations: [join(cwd(), "src/config/db/migrations/*{.ts,.js}")],
 

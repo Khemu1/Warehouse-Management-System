@@ -18,7 +18,8 @@
       "@/*": ["./src/*"],
       "@auth/*": ["../auth-service/src/*"],
       "@inventory/*": ["../inventory-service/src/*"],
-      "@payments/*": ["../payment-service/src/*"]
+      "@payments/*": ["../payment-service/src/*"],
+      "@orders/*": ["../orders-service/src/*"]
     },
     "sourceMap": false
   },
