@@ -11,7 +11,8 @@
       "@events/*": ["../inventory-service/src/*"],
       "@payments/*": ["../payment-service/src/*"]
     },
-    "emitDeclarationOnly": false
+    "emitDeclarationOnly": false,
+    "sourceMap": false
   },
   "include": ["src/**/*", "../shared/src/safe-client-proxy.ts"],
   "exclude": ["node_modules", "dist", "test"]
