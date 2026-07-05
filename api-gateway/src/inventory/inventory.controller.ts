@@ -7,17 +7,16 @@ import {
   ParseUUIDPipe,
   Inject,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import { ReserveStockDto, CheckStockDto } from '@shared/dtos/inventory.dtos';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { Roles } from '@shared/types';
-import type { JwtPayload } from '@shared/types';
+import type { JwtPayload, ISafeClient } from '@shared/types';
 import { User } from '@shared/decorators/user.decorator';
 
 @Controller('inventory')
 export class InventoryController {
   constructor(
-    @Inject('INVENTORY_SERVICE') private inventoryClient: ClientProxy,
+    @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
   ) {}
 
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOutboundOrderDto } from './dto/create-outbound-order.dto';
-import { UpdateOutboundOrderDto } from './dto/update-outbound-order.dto';
+import {
+  CreateOutboundOrderDto,
+  UpdateOutboundOrderDto,
+} from '@shared/dtos/outbound-order.dtos';
 
 @Injectable()
 export class OutboundOrdersService {
@@ -16,8 +18,8 @@ export class OutboundOrdersService {
     return `This action returns a #${id} outboundOrder`;
   }
 
-  update(id: number, updateOutboundOrderDto: UpdateOutboundOrderDto) {
-    return `This action updates a #${id} outboundOrder`;
+  update(updateOutboundOrderDto: UpdateOutboundOrderDto) {
+    return `This action updates a #${updateOutboundOrderDto} outboundOrder`;
   }
 
   remove(id: number) {

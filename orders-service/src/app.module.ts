@@ -1,16 +1,16 @@
 import { Module, ValidationPipe } from '@nestjs/common';
-import { WarehousesModule } from './warehouses/warehouses.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { TypeOrmConfigService } from '@shared/config/db/typeorm.config';
 import { GlobalErrorFilter } from '@shared/filters/global-error.filter';
 import { CustomError } from '@shared/filters/CustomError';
-import { ProductsModule } from './products/products.module';
-import { InventoryModule } from './inventory/inventory.module';
 import { DatabaseModule } from './database.module';
 import { InboundOrdersModule } from './inbound-orders/inbound-orders.module';
 import { OutboundOrdersModule } from './outbound-orders/outbound-orders.module';
+import { AppClientsModule } from './clients/clients.module';
+import { BullModule } from '@nestjs/bullmq';
+import { QueueModule } from '@shared/queues/queue.module';
 
 @Module({
   imports: [
@@ -21,10 +21,9 @@ import { OutboundOrdersModule } from './outbound-orders/outbound-orders.module';
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
     }),
+    AppClientsModule,
+    QueueModule,
     DatabaseModule,
-    WarehousesModule,
-    ProductsModule,
-    InventoryModule,
     InboundOrdersModule,
     OutboundOrdersModule,
   ],

@@ -28,8 +28,11 @@ export class InboundOrderItem {
   @Column('integer')
   expected_quantity: number;
 
-  @Column('integer')
+  @Column('integer', { default: 0 })
   received_quantity: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  unit_cost: number;
 
   @CreateDateColumn()
   created_at: Date;

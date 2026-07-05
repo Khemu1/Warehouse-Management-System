@@ -32,7 +32,12 @@ export class WarehousesController {
 
   @MessagePattern('deleteWarehouse')
   async remove(@Payload() data: { id: string }) {
-    this.WarehousesService.remove(data.id);
+    await this.WarehousesService.remove(data.id);
     return {};
+  }
+
+  @MessagePattern('doesWarehouseExist')
+  async doesExist(@Payload() data: { id: string }) {
+    return await this.WarehousesService.doesWarehouseExist(data.id);
   }
 }

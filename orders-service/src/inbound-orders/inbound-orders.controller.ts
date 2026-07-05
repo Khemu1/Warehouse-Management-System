@@ -3,7 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { InboundOrdersService } from './inbound-orders.service';
 import {
   CreateInboundOrderDto,
-  UpdateInboundOrderDto,
+  ReceiveInboundOrderDto,
 } from '@shared/dtos/inbound-order.dtos';
 
 @Controller()
@@ -11,27 +11,40 @@ export class InboundOrdersController {
   constructor(private readonly inboundOrdersService: InboundOrdersService) {}
 
   @MessagePattern('createInboundOrder')
-  create(@Payload() createInboundOrderDto: CreateInboundOrderDto) {
-    return this.inboundOrdersService.create(createInboundOrderDto);
+  async create(@Payload() createInboundOrderDto: CreateInboundOrderDto) {
+    return await this.inboundOrdersService.create(createInboundOrderDto);
+  }
+
+  @MessagePattern('receiveInboundOrder')
+  async receive(@Payload() receiveInboundOrderDto: ReceiveInboundOrderDto) {
+    return await this.inboundOrdersService.receive(receiveInboundOrderDto);
+  }
+
+  @MessagePattern('cancelInboundOrder')
+  async cancelInboundOrder(@Payload() data: { id: string }) {
+    await this.inboundOrdersService.cancel(data.id);
+    return {};
   }
 
   @MessagePattern('findAllInboundOrders')
-  findAll() {
-    return this.inboundOrdersService.findAll();
+  async findAll(@Payload() data: { warehouse_id?: string }) {
+    return await this.inboundOrdersService.findAll(data.warehouse_id);
   }
 
   @MessagePattern('findOneInboundOrder')
-  findOne(@Payload() id: number) {
-    return this.inboundOrdersService.findOne(id);
+  async findOne(@Payload() data: { id: string }) {
+    return await this.inboundOrdersService.findOne(data.id);
   }
-
-  // @MessagePattern('updateInboundOrder')
-  // update(@Payload() updateInboundOrderDto: UpdateInboundOrderDto) {
-  //   return this.inboundOrdersService.update(updateInboundOrderDto.id, updateInboundOrderDto);
-  // }
-
-  @MessagePattern('removeInboundOrder')
-  remove(@Payload() id: number) {
-    return this.inboundOrdersService.remove(id);
+  @MessagePattern('inboundItemStockFailed')
+  async markAttention(
+    @Payload()
+    data: {
+      order_id: string;
+      item_id: string;
+      reason?: string;
+      attempts?: number;
+    },
+  ) {
+    return await this.inboundOrdersService.markNeedsAttention(data);
   }
 }

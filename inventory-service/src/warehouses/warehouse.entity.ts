@@ -1,4 +1,4 @@
-import { Inventory } from '../inventory/inventory.entity';
+import { Inventory } from '../inventory/entities/inventory.entity';
 import {
   Column,
   CreateDateColumn,

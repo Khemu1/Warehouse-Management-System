@@ -4,14 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Inventory } from './inventory.entity';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { CheckStockDto } from '@shared/dtos/inventory.dtos';
+import { Inventory } from './entities/inventory.entity';
+import { StockMovement } from './entities/stock-movement.entity';
 
 @Injectable()
 export class InventoryService {
   constructor(
     @InjectRepository(Inventory) private repo: Repository<Inventory>,
+    @InjectRepository(StockMovement)
+    private movementRepo: Repository<StockMovement>,
   ) {}
 
   async check(data: CheckStockDto) {
@@ -76,5 +79,63 @@ export class InventoryService {
       },
       order: { created_at: 'DESC' },
     });
+  }
+
+  async addStock(data: {
+    warehouse_id: string;
+    product_id: string;
+    quantity: number;
+    idempotency_key: string;
+  }) {
+    const item = await this.repo.findOne({
+      where: {
+        warehouse_id: data.warehouse_id,
+        product_id: data.product_id,
+      },
+    });
+    if (!item) {
+      throw new NotFoundException("Item wasn't found to be added");
+    }
+
+    // save record the movement
+    try {
+      await this.movementRepo.insert({
+        idempotency_key: data.idempotency_key,
+        warehouse_id: data.warehouse_id,
+        product_id: data.product_id,
+        quantity: data.quantity,
+        type: 'inbound_receive',
+      });
+    } catch (err) {
+      if (
+        err instanceof QueryFailedError &&
+        (err as any).driverError?.code === '23505'
+      ) {
+        return { alreadyApplied: true };
+      }
+      throw err;
+    }
+
+    await this.repo
+      .createQueryBuilder()
+      .update(Inventory)
+      .set({ quantity: () => `quantity + ${data.quantity}` })
+      .where('warehouse_id = :warehouse_id', {
+        warehouse_id: data.warehouse_id,
+      })
+      .andWhere('product_id = :product_id', { product_id: data.product_id })
+      .execute();
+
+    return { alreadyApplied: false };
+  }
+
+  async didItemMove(idempotency_key: string) {
+    const movement = await this.movementRepo.findOne({
+      where: { idempotency_key },
+      select: {
+        idempotency_key: true,
+      },
+    });
+    return movement;
   }
 }

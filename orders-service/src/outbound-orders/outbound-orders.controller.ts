@@ -1,8 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OutboundOrdersService } from './outbound-orders.service';
-import { CreateOutboundOrderDto } from './dto/create-outbound-order.dto';
-import { UpdateOutboundOrderDto } from './dto/update-outbound-order.dto';
+import {
+  CreateOutboundOrderDto,
+  UpdateOutboundOrderDto,
+} from '@shared/dtos/outbound-order.dtos';
 
 @Controller()
 export class OutboundOrdersController {
@@ -25,7 +27,7 @@ export class OutboundOrdersController {
 
   @MessagePattern('updateOutboundOrder')
   update(@Payload() updateOutboundOrderDto: UpdateOutboundOrderDto) {
-    return this.outboundOrdersService.update(updateOutboundOrderDto.id, updateOutboundOrderDto);
+    return this.outboundOrdersService.update(updateOutboundOrderDto);
   }
 
   @MessagePattern('removeOutboundOrder')

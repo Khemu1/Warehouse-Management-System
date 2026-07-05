@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './products.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateProductDto, UpdateProductDto } from '@shared/dtos/products.dto';
 
 @Injectable()
@@ -67,5 +67,20 @@ export class ProductsService {
     const { updated_at, ...rest } = product;
 
     return rest;
+  }
+
+  async doesProductsExist(ids: string[]) {
+    const found = await this.repo.find({
+      where: { id: In(ids) },
+      select: { id: true },
+    });
+
+    const foundIds = new Set(found.map((p) => p.id));
+    const missingIds = ids.filter((id) => !foundIds.has(id));
+
+    return {
+      allExist: missingIds.length === 0,
+      missingIds,
+    };
   }
 }

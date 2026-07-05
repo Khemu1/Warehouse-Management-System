@@ -72,4 +72,17 @@ export class WarehousesService {
 
     return await this.repo.delete({ id });
   }
+
+  async doesWarehouseExist(id: string) {
+    const warehouse = await this.repo.findOne({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (!warehouse) return false;
+    return true;
+  }
 }

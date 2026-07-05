@@ -30,7 +30,11 @@ export class SafeClientProxy implements ISafeClient {
     );
   }
 
-  emit<T = any>(pattern: string, data: any) {
-    return this.client.emit<T>(pattern, data);
+  emit<T = any>(pattern: string, data: any): Promise<T> {
+    return firstValueFrom(
+      this.client
+        .emit<T>(pattern, data)
+        .pipe(catchError((err) => throwError(() => err))),
+    );
   }
 }

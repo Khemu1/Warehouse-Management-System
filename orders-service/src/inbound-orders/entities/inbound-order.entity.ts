@@ -26,7 +26,7 @@ export class InboundOrder {
   })
   status: InBoundOrderStatus;
 
-  @Column('integer')
+  @Column('integer', { default: 0 })
   total_amount: number;
 
   @Column('uuid')

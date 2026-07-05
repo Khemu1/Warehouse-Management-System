@@ -9,6 +9,9 @@ import { CustomError } from '@shared/filters/CustomError';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { DatabaseModule } from './database.module';
+import { BullModule } from '@nestjs/bullmq';
+import { QueueModule } from '@shared/queues/queue.module';
+import { AppClientsModule } from './clients/clients.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { DatabaseModule } from './database.module';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
+    QueueModule,
+    BullModule.registerQueue({ name: 'stock-updates' }),
+    AppClientsModule,
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
     }),
