@@ -10,6 +10,7 @@ import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { InboundOrdersModule } from './orders/inbound-orders/inbound-orders.module';
 import { HealthModule } from './health/health.module';
+import { OutboundOrdersModule } from './orders/outbound-orders/outbound-orders.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module';
     ProductsModule,
     InventoryModule,
     InboundOrdersModule,
+    OutboundOrdersModule,
   ],
   providers: [
     {

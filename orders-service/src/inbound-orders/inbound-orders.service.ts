@@ -21,7 +21,8 @@ import { InboundOrderFailure } from './entities/inbound-order-failure.entity';
 @Injectable()
 export class InboundOrdersService {
   constructor(
-    @InjectQueue('order-processing') private orderProcessingQueue: Queue,
+    @InjectQueue('inbound-order-processing')
+    private orderProcessingQueue: Queue,
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
     @InjectRepository(InboundOrder)
     private inboundOrderRepo: Repository<InboundOrder>,
@@ -107,7 +108,8 @@ export class InboundOrdersService {
         status: true,
       },
     });
-    if (!order) throw new NotFoundException(`Order ${dto.order_id} wasn't found`);
+    if (!order)
+      throw new NotFoundException(`Order ${dto.order_id} wasn't found`);
 
     if (order?.status !== InBoundOrderStatus.PENDING) {
       throw new ConflictException(`Order ${dto.order_id} is not pending`);

@@ -6,7 +6,7 @@ import { CheckStockDto, ReserveStockDto } from '@shared/dtos/inventory.dtos';
 @Controller()
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
-  @MessagePattern('checkInventoryItem')
+  @MessagePattern('checkStock')
   async checkInventory(data: CheckStockDto) {
     return await this.inventoryService.check(data);
   }

@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PaymentStatus } from '../types';
+import { PaymentStatus } from '@shared/types';
 
 @Entity('payments')
 export class Payment {
@@ -14,10 +14,7 @@ export class Payment {
   id: string;
 
   @PrimaryColumn('uuid')
-  user_id: string;
-
-  @PrimaryColumn('uuid')
-  booking_id: string;
+  order_id: string;
 
   @Column('enum', { enum: PaymentStatus })
   status: PaymentStatus;

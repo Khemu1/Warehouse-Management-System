@@ -36,6 +36,6 @@ const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
       inject: [RAW_ORDERS],
     },
   ],
-  exports: ['INVENTORY_SERVICE', 'ORDERS_SERVICE'],
+  exports: ['INVENTORY_SERVICE', "ORDERS_SERVICE"],
 })
 export class AppClientsModule {}

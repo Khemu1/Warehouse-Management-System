@@ -1,37 +1,66 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { OutboundOrdersService } from './outbound-orders.service';
-import {
-  CreateOutboundOrderDto,
-  UpdateOutboundOrderDto,
-} from '@shared/dtos/outbound-order.dtos';
+import { CreateOutboundOrderDto } from '@shared/dtos/outbound-order.dtos';
+import { OutboundOrder } from './entities/outbound-order.entity';
 
 @Controller()
 export class OutboundOrdersController {
   constructor(private readonly outboundOrdersService: OutboundOrdersService) {}
 
   @MessagePattern('createOutboundOrder')
-  create(@Payload() createOutboundOrderDto: CreateOutboundOrderDto) {
-    return this.outboundOrdersService.create(createOutboundOrderDto);
+  async create(@Payload() createOutboundOrderDto: CreateOutboundOrderDto) {
+    return await this.outboundOrdersService.create(createOutboundOrderDto);
+  }
+
+  @MessagePattern('confirmOutboundOrder')
+  async confirm(@Payload() data: { order_id: string }) {
+    return await this.outboundOrdersService.confirm(data.order_id);
+  }
+
+  @MessagePattern('cancelOutboundOrder')
+  async cancelOutboundOrder(@Payload() data: { id: string }) {
+    await this.outboundOrdersService.cancel(data.id);
+    return {};
   }
 
   @MessagePattern('findAllOutboundOrders')
-  findAll() {
-    return this.outboundOrdersService.findAll();
+  async findAll(@Payload() data: { warehouse_id?: string }) {
+    return await this.outboundOrdersService.findAll(data.warehouse_id);
   }
 
   @MessagePattern('findOneOutboundOrder')
-  findOne(@Payload() id: number) {
-    return this.outboundOrdersService.findOne(id);
+  async findOne(
+    @Payload()
+    data: {
+      id: string;
+      returnAll?: boolean;
+      specifiedColumns?: (keyof OutboundOrder)[];
+      withRelations?: boolean;
+    },
+  ) {
+    return await this.outboundOrdersService.findOne(data);
   }
 
-  @MessagePattern('updateOutboundOrder')
-  update(@Payload() updateOutboundOrderDto: UpdateOutboundOrderDto) {
-    return this.outboundOrdersService.update(updateOutboundOrderDto);
+  @EventPattern('outboundItemStockFailed')
+  async markAttention(
+    @Payload()
+    data: {
+      order_id: string;
+      item_id: string;
+      reason?: string;
+      attempts?: number;
+    },
+  ) {
+    return await this.outboundOrdersService.markNeedsAttention(data);
   }
 
-  @MessagePattern('removeOutboundOrder')
-  remove(@Payload() id: number) {
-    return this.outboundOrdersService.remove(id);
+  @MessagePattern('health.check')
+  checkHealth(): { status: string; service: string; timestamp: string } {
+    return {
+      status: 'ok',
+      service: 'outbound-orders-service',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

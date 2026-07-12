@@ -1,8 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PaymentService } from './payment.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { CreatePaymentDto } from '@shared/dtos/payment.dto';
 
 @Controller()
 export class PaymentController {
@@ -21,11 +20,6 @@ export class PaymentController {
   @MessagePattern('findOnePayment')
   findOne(@Payload() id: number) {
     return this.paymentService.findOne(id);
-  }
-
-  @MessagePattern('updatePayment')
-  update(@Payload() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentService.update(updatePaymentDto.id, updatePaymentDto);
   }
 
   @MessagePattern('removePayment')

@@ -7,7 +7,7 @@ import { BullModule } from '@nestjs/bullmq';
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'order-processing' },
+      { name: 'inbound-order-processing' },
       { name: 'stock-updates' },
     ),
   ],

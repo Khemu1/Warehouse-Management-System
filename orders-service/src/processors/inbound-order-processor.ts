@@ -15,7 +15,7 @@ import { In, Repository } from 'typeorm';
 
 const BATCH_SIZE = 100;
 
-@Processor('order-processing')
+@Processor('inbound-order-processing')
 export class ReceiveOrderProcessor extends WorkerHost {
   constructor(
     @InjectQueue('stock-updates') private stockQueue: Queue,

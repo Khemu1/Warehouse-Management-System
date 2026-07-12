@@ -45,11 +45,17 @@ export enum InBoundOrderStatus {
   NEEDS_ATTENTION = "needs_attention",
 }
 
-export enum OUT_BoundOrderStatus {
+export enum OutboundOrderStatus {
   PENDING = "pending",
-  RECEIVED = "received",
+  RESERVING = "reserving",
+  RESERVED = "reserved",
+  CONFIRMING = "confirming",
   CONFIRMED = "confirmed",
-  SHIPPED = "shipped",
   CANCELLED = "cancelled",
   NEEDS_ATTENTION = "needs_attention",
+}
+
+export enum PaymentStatus {
+  CONFIRMED = "confirmed",
+  FAILED = "failed",
 }

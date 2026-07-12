@@ -3,9 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 
 @Entity('stock_movement')
+@Index(['idempotency_key']) // For idempotency checks
+@Index(['product_id', 'warehouse_id', 'created_at']) // For inventory queries
 export class StockMovement {
   @PrimaryGeneratedColumn('uuid')
   id: string;

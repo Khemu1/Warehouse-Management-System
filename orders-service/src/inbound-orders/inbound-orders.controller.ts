@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { InboundOrdersService } from './inbound-orders.service';
 import {
   CreateInboundOrderDto,
@@ -35,7 +35,7 @@ export class InboundOrdersController {
   async findOne(@Payload() data: { id: string }) {
     return await this.inboundOrdersService.findOne(data.id);
   }
-  @MessagePattern('inboundItemStockFailed')
+  @EventPattern('inboundItemStockFailed')
   async markAttention(
     @Payload()
     data: {
