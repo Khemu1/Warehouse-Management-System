@@ -15,7 +15,7 @@ export class HealthController {
     private rmq: RabbitMQHealthIndicator,
     @Inject('AUTH_SERVICE') private authClient: ISafeClient,
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
-    // @Inject('PAYMENT_SERVICE') private paymentClient: ISafeClient,
+    @Inject('PAYMENTS_SERVICE') private paymentClient: ISafeClient,
     @Inject('ORDERS_SERVICE') private ordersClient: ISafeClient,
   ) {}
 
@@ -37,12 +37,12 @@ export class HealthController {
           this.inventoryClient,
           'health.check',
         ),
-      // () =>
-      //   this.rmq.pingService(
-      //     'payment-service',
-      //     this.paymentClient,
-      //     'health.check',
-      //   ),
+      () =>
+        this.rmq.pingService(
+          'payment-service',
+          this.paymentClient,
+          'health.check',
+        ),
       () =>
         this.rmq.pingService(
           'orders-service',

@@ -11,6 +11,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { InboundOrdersModule } from './orders/inbound-orders/inbound-orders.module';
 import { HealthModule } from './health/health.module';
 import { OutboundOrdersModule } from './orders/outbound-orders/outbound-orders.module';
+import { PaymentsModule } from './payments/payments.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,6 +27,7 @@ import { OutboundOrdersModule } from './orders/outbound-orders/outbound-orders.m
     InventoryModule,
     InboundOrdersModule,
     OutboundOrdersModule,
+    PaymentsModule,
   ],
   providers: [
     {

@@ -38,30 +38,51 @@ export class PaymentService {
     const existingPayment = await this.repo.findOne({
       where: {
         order_id: createPaymentDto.order_id,
-        status: Not(PaymentStatus.FAILED),
+        status: PaymentStatus.CONFIRMED,
       },
     });
     if (existingPayment) {
-      throw new ConflictException('a payment already exists for this order');
+      throw new ConflictException({
+        message: 'A payment had been confrimed for this order',
+        errors: {
+          alreadyPaid: true,
+        },
+      });
     }
 
     const payment = this.repo.create({
       order_id: order.id,
       total_amount: order.total_amount,
       status: PaymentStatus.CONFIRMED,
+      payment_method: createPaymentDto.payment_method,
     });
     return this.repo.save(payment);
   }
 
-  findAll() {
-    return `This action returns all payment`;
+  async findAll() {
+    return await this.repo.find({
+      select: {
+        id: true,
+        order_id: true,
+        status: true,
+        payment_method: true,
+        total_amount: true,
+        created_at: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} payment`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} payment`;
+  async findOne(id: string) {
+    return await this.repo.findOne({
+      where: { id },
+      select: {
+        id: true,
+        order_id: true,
+        status: true,
+        payment_method: true,
+        total_amount: true,
+        created_at: true,
+      },
+    });
   }
 }

@@ -12,18 +12,22 @@ export class PaymentController {
     return this.paymentService.create(createPaymentDto);
   }
 
-  @MessagePattern('findAllPayment')
+  @MessagePattern('findAllPayments')
   findAll() {
     return this.paymentService.findAll();
   }
 
   @MessagePattern('findOnePayment')
-  findOne(@Payload() id: number) {
-    return this.paymentService.findOne(id);
+  findOne(@Payload() data: { id: string }) {
+    return this.paymentService.findOne(data.id);
   }
 
-  @MessagePattern('removePayment')
-  remove(@Payload() id: number) {
-    return this.paymentService.remove(id);
+  @MessagePattern('health.check')
+  checkHealth(): { status: string; service: string; timestamp: string } {
+    return {
+      status: 'ok',
+      service: 'inventory-service',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

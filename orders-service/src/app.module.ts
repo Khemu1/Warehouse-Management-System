@@ -9,7 +9,6 @@ import { DatabaseModule } from './database.module';
 import { InboundOrdersModule } from './inbound-orders/inbound-orders.module';
 import { OutboundOrdersModule } from './outbound-orders/outbound-orders.module';
 import { AppClientsModule } from './clients/clients.module';
-import { BullModule } from '@nestjs/bullmq';
 import { QueueModule } from '@shared/queues/queue.module';
 
 @Module({
