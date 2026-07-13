@@ -233,11 +233,12 @@ export class OutboundOrdersService {
       where: { id: orderId },
     });
 
-    if (order.status !== OutboundOrderStatus.RESERVED) {
+    if (!order) throw new NotFoundException("Order wasn't found");
+
+    if (order.status !== OutboundOrderStatus.RESERVED)
       throw new ConflictException(
         `Cannot confirm order in status ${order.status}`,
       );
-    }
 
     const payment = await this.paymentClient.send('findPaymentForOrder', {
       order_id: orderId,

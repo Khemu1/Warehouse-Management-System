@@ -57,6 +57,7 @@ export enum OutboundOrderStatus {
 }
 
 export enum PaymentStatus {
+  PENDING = "pending",
   CONFIRMED = "confirmed",
   FAILED = "failed",
 }

@@ -14,11 +14,8 @@ export class OutboundOrdersController {
   }
 
   @MessagePattern('confirmOutboundOrder')
-  async confirm(@Payload() data: { order_id: string; user_id: string }) {
-    return await this.outboundOrdersService.confirm(
-      data.order_id,
-      data.user_id,
-    );
+  async confirm(@Payload() data: { id: string; user_id: string }) {
+    return await this.outboundOrdersService.confirm(data.id, data.user_id);
   }
 
   @MessagePattern('cancelOutboundOrder')

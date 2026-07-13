@@ -17,6 +17,11 @@ export class PaymentController {
     return this.paymentService.findAll();
   }
 
+  @MessagePattern('findPaymentForOrder')
+  findPaymentForOrder(@Payload() data: { id: string }) {
+    return this.paymentService.findOneForOrder(data.id);
+  }
+
   @MessagePattern('findOnePayment')
   findOne(@Payload() data: { id: string }) {
     return this.paymentService.findOne(data.id);

@@ -8,6 +8,7 @@ import {
   Inject,
   HttpCode,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { CreateOutboundOrderDto } from '@shared/dtos/outbound-order.dtos';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
@@ -37,6 +38,12 @@ export class OutboundOrdersController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
     return this.ordersClient.send('findOneOutboundOrder', { id, ...user });
+  }
+
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
+  @Patch(':id/confirm')
+  confirm(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
+    return this.ordersClient.send('confirmOutboundOrder', { id, ...user });
   }
 
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)

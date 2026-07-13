@@ -2,18 +2,22 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryColumn,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { PaymentStatus } from '@shared/types';
 
 @Entity('payments')
+@Index('one_active_payment_per_order', ['order_id'], {
+  unique: true,
+  where: `status != 'failed'`,
+})
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @PrimaryColumn('uuid')
+  @Column('uuid')
   order_id: string;
 
   @Column('enum', { enum: PaymentStatus })
@@ -24,6 +28,9 @@ export class Payment {
 
   @Column('decimal', { precision: 10, scale: 2 })
   total_amount: number;
+
+  @Column({ nullable: true })
+  gateway_reference: string;
 
   @CreateDateColumn()
   created_at: Date;
