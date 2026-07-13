@@ -4,6 +4,7 @@ import { ClientsModule, ClientProxy, Transport } from '@nestjs/microservices';
 
 const RAW_INVENTORY = 'INVENTORY_SERVICE_RAW';
 const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
+const RAW_PAYMENTS = 'PAYMENTS_SERVICE_RAW';
 
 @Global()
 @Module({
@@ -22,6 +23,11 @@ const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
         transport: Transport.RMQ,
         options: { urls: [process.env.RABBITMQ_URL!], queue: 'orders_queue' },
       },
+      {
+        name: RAW_PAYMENTS,
+        transport: Transport.RMQ,
+        options: { urls: [process.env.RABBITMQ_URL!], queue: 'payments_queue' },
+      },
     ]),
   ],
   providers: [
@@ -35,7 +41,12 @@ const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
       useFactory: (client: ClientProxy) => new SafeClientProxy(client),
       inject: [RAW_ORDERS],
     },
+    {
+      provide: 'PAYMENTS_SERVICE',
+      useFactory: (client: ClientProxy) => new SafeClientProxy(client),
+      inject: [RAW_PAYMENTS],
+    },
   ],
-  exports: ['INVENTORY_SERVICE', "ORDERS_SERVICE"],
+  exports: ['INVENTORY_SERVICE', 'ORDERS_SERVICE', 'PAYMENTS_SERVICE'],
 })
 export class AppClientsModule {}

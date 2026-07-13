@@ -43,6 +43,22 @@ export class StockUpdatesProcessor extends WorkerHost {
           idempotency_key,
         });
 
+      case 'fulfill_stock':
+        return this.handleFulfillStock({
+          warehouse_id,
+          product_id,
+          quantity,
+          idempotency_key,
+        });
+
+      case 'cancel_stock':
+        return this.handleCancelStock({
+          warehouse_id,
+          product_id,
+          quantity,
+          idempotency_key,
+        });
+
       default:
         throw new Error(`Unknown job type: ${job.name}`);
     }
@@ -68,16 +84,55 @@ export class StockUpdatesProcessor extends WorkerHost {
     return this.inventoryService.reserveItem(params);
   }
 
+  private async handleFulfillStock(params: {
+    warehouse_id: string;
+    product_id: string;
+    quantity: number;
+    idempotency_key: string;
+  }) {
+    // Payment confirmed: deduct real stock AND release the reservation
+    return this.inventoryService.fulfillItem(params);
+  }
+
+  private async handleCancelStock(params: {
+    warehouse_id: string;
+    product_id: string;
+    quantity: number;
+    idempotency_key: string;
+  }) {
+    return this.inventoryService.releaseReservation(params);
+  }
+
   @OnWorkerEvent('completed')
   async onCompleted(job: Job<StockJobData>) {
-    // Only emit events for reserve_stock completion
-    if (job.name !== 'reserve_stock') return;
-
     const { order_id, item_id } = job.data;
-    // await this.ordersClient.emit('outboundItemStockReserved', {
-    //   order_id,
-    //   item_id,
-    // });
+
+    switch (job.name) {
+      case 'reserve_stock':
+        // await this.ordersClient.emit('outboundItemStockReserved', {
+        //   order_id,
+        //   item_id,
+        // });
+        break;
+
+      case 'fulfill_stock':
+        // await this.ordersClient.emit('outboundItemStockFulfilled', {
+        //   order_id,
+        //   item_id,
+        // });
+        break;
+
+      case 'cancel_stock':
+        // await this.ordersClient.emit('outboundItemStockReleased', {
+        //   order_id,
+        //   item_id,
+        // });
+        break;
+
+      default:
+        // add_stock and any other job types have no completion event today
+        break;
+    }
   }
 
   @OnWorkerEvent('failed')
@@ -101,9 +156,20 @@ export class StockUpdatesProcessor extends WorkerHost {
         `Job reported failed but stock WAS applied (key: ${idempotency_key}) — no action needed`,
       );
 
-      // If reserve succeeded, still emit the reserved event
       if (job.name === 'reserve_stock') {
         // await this.ordersClient.emit('outboundItemStockReserved', {
+        //   order_id,
+        //   item_id,
+        // });
+      }
+      if (job.name === 'fulfill_stock') {
+        // await this.ordersClient.emit('outboundItemStockFulfilled', {
+        //   order_id,
+        //   item_id,
+        // });
+      }
+      if (job.name === 'cancel_stock') {
+        // await this.ordersClient.emit('outboundItemStockReleased', {
         //   order_id,
         //   item_id,
         // });
@@ -136,6 +202,27 @@ export class StockUpdatesProcessor extends WorkerHost {
 
       case 'add_stock':
         await this.ordersClient.emit('inboundItemStockFailed', {
+          order_id,
+          item_id,
+          reason: error.message,
+          attempts: job.attemptsMade,
+        });
+        break;
+
+      case 'fulfill_stock':
+        await this.ordersClient.emit('outboundItemFulfillmentFailed', {
+          order_id,
+          item_id,
+          reason: error.message,
+          attempts: job.attemptsMade,
+        });
+        break;
+
+      case 'cancel_stock':
+        // A failed release is serious: reserved_quantity may stay stuck,
+        // blocking that stock from ever being reserved again. Surface it
+        // loudly rather than letting it go silent.
+        await this.ordersClient.emit('outboundItemReleaseFailed', {
           order_id,
           item_id,
           reason: error.message,

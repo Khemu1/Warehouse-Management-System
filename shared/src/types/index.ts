@@ -52,6 +52,7 @@ export enum OutboundOrderStatus {
   CONFIRMING = "confirming",
   CONFIRMED = "confirmed",
   CANCELLED = "cancelled",
+  CANCELLING = "cancelling",
   NEEDS_ATTENTION = "needs_attention",
 }
 

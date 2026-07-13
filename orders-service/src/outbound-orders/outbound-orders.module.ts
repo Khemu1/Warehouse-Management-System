@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { OutboundOrdersService } from './outbound-orders.service';
 import { OutboundOrdersController } from './outbound-orders.controller';
 import { BullModule } from '@nestjs/bullmq';
-import { ReserveOrderProcessor } from '@/processors/outbound-order-processor';
+import { OutboundOrdersProcessor } from '@/processors/outbound-order-processor';
 
 @Module({
   imports: [
@@ -12,6 +12,6 @@ import { ReserveOrderProcessor } from '@/processors/outbound-order-processor';
     ),
   ],
   controllers: [OutboundOrdersController],
-  providers: [OutboundOrdersService, ReserveOrderProcessor],
+  providers: [OutboundOrdersService, OutboundOrdersProcessor],
 })
 export class OutboundOrdersModule {}

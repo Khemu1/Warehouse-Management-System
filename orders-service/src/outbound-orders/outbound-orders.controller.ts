@@ -14,13 +14,16 @@ export class OutboundOrdersController {
   }
 
   @MessagePattern('confirmOutboundOrder')
-  async confirm(@Payload() data: { order_id: string }) {
-    return await this.outboundOrdersService.confirm(data.order_id);
+  async confirm(@Payload() data: { order_id: string; user_id: string }) {
+    return await this.outboundOrdersService.confirm(
+      data.order_id,
+      data.user_id,
+    );
   }
 
   @MessagePattern('cancelOutboundOrder')
-  async cancelOutboundOrder(@Payload() data: { id: string }) {
-    await this.outboundOrdersService.cancel(data.id);
+  async cancelOutboundOrder(@Payload() data: { id: string; user_id: string }) {
+    await this.outboundOrdersService.cancel(data.id, data.user_id);
     return {};
   }
 

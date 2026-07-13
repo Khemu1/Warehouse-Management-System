@@ -16,6 +16,12 @@ export class OutboundOrder {
   @Column('uuid')
   warehouse_id: string;
 
+  @Column('uuid', { nullable: true })
+  confirmed_by: string;
+
+  @Column('uuid', { nullable: true })
+  cancalled_by: string;
+
   @Column('varchar')
   customer_name: string;
 
@@ -40,6 +46,9 @@ export class OutboundOrder {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @Column('timestamptz', { nullable: true })
+  confirmed_at: Date | null;
 
   @OneToMany(() => OutboundOrderItem, (item) => item.order)
   outbound_items: OutboundOrderItem[];

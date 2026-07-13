@@ -11,18 +11,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { OutboundOrderStatus } from '@shared/types';
 import { Job, Queue } from 'bullmq';
 import { chunk } from 'lodash';
-import {  Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 const BATCH_SIZE = 100;
 
 @Processor('outbound-order-processing')
-export class ReserveOrderProcessor extends WorkerHost {
+export class OutboundOrdersProcessor extends WorkerHost {
   constructor(
     @InjectQueue('stock-updates') private stockQueue: Queue,
     @InjectRepository(OutboundOrder)
     private orderRepo: Repository<OutboundOrder>,
-    @InjectRepository(OutboundOrderItem)
-    private itemRepo: Repository<OutboundOrderItem>,
     @InjectRepository(OutboundOrderFailure)
     private failureRepo: Repository<OutboundOrderFailure>,
   ) {

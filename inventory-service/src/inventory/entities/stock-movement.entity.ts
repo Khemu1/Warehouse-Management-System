@@ -22,7 +22,7 @@ export class StockMovement {
   @Column('varchar') type:
     | 'inbound_receive'
     | 'reservation'
-    | 'commit'
+    | 'outbound_ship'
     | 'reversal';
 
   @CreateDateColumn() created_at: Date;

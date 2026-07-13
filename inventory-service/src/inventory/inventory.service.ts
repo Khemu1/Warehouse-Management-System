@@ -159,6 +159,120 @@ export class InventoryService {
     });
   }
 
+  async fulfillItem(data: {
+    warehouse_id: string;
+    product_id: string;
+    quantity: number;
+    idempotency_key: string;
+  }) {
+    return this.repo.manager.transaction(async (manager) => {
+      try {
+        await manager.insert(StockMovement, {
+          idempotency_key: data.idempotency_key,
+          warehouse_id: data.warehouse_id,
+          product_id: data.product_id,
+          quantity: data.quantity,
+          type: 'outbound_ship',
+        });
+      } catch (err) {
+        if (
+          err instanceof QueryFailedError &&
+          (err as any).driverError?.code === '23505'
+        ) {
+          return { alreadyApplied: true };
+        }
+        throw err;
+      }
+
+      const item = await manager.findOne(Inventory, {
+        where: {
+          warehouse_id: data.warehouse_id,
+          product_id: data.product_id,
+        },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!item) {
+        throw new NotFoundException(
+          `Item ${data.product_id} wasn't found in the inventory`,
+        );
+      }
+
+      if (item.reserved_quantity < data.quantity) {
+        throw new ConflictException(
+          `Fulfillment quantity (${data.quantity}) exceeds reserved quantity ` +
+            `(${item.reserved_quantity}) for product ${data.product_id} — ` +
+            `possible state mismatch, needs investigation`,
+        );
+      }
+      if (item.quantity < data.quantity) {
+        throw new ConflictException(
+          `Fulfillment quantity (${data.quantity}) exceeds on-hand quantity ` +
+            `(${item.quantity}) for product ${data.product_id}`,
+        );
+      }
+
+      item.quantity -= data.quantity;
+      item.reserved_quantity -= data.quantity;
+      await manager.save(Inventory, item);
+
+      return { alreadyApplied: false };
+    });
+  }
+
+  async releaseReservation(data: {
+    warehouse_id: string;
+    product_id: string;
+    quantity: number;
+    idempotency_key: string;
+  }) {
+    return this.repo.manager.transaction(async (manager) => {
+      try {
+        await manager.insert(StockMovement, {
+          idempotency_key: data.idempotency_key,
+          warehouse_id: data.warehouse_id,
+          product_id: data.product_id,
+          quantity: data.quantity,
+          type: 'reversal',
+        });
+      } catch (err) {
+        if (
+          err instanceof QueryFailedError &&
+          (err as any).driverError?.code === '23505'
+        ) {
+          return { alreadyApplied: true };
+        }
+        throw err;
+      }
+
+      const item = await manager.findOne(Inventory, {
+        where: {
+          warehouse_id: data.warehouse_id,
+          product_id: data.product_id,
+        },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!item) {
+        throw new NotFoundException(
+          `Item ${data.product_id} wasn't found in the inventory`,
+        );
+      }
+
+      if (item.reserved_quantity < data.quantity) {
+        throw new ConflictException(
+          `Release quantity (${data.quantity}) exceeds reserved quantity ` +
+            `(${item.reserved_quantity}) for product ${data.product_id} — ` +
+            `possible state mismatch, needs investigation`,
+        );
+      }
+
+      // quantity untouched — stock never left the warehouse
+      item.reserved_quantity -= data.quantity;
+      await manager.save(Inventory, item);
+
+      return { alreadyApplied: false };
+    });
+  }
+
   async findWarehouseProducts(warehouse_id: string) {
     return this.repo.find({
       where: { warehouse_id },

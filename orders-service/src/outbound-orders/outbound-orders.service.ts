@@ -9,7 +9,7 @@ import { CreateOutboundOrderDto } from '@shared/dtos/outbound-order.dtos';
 import { OutboundOrder } from './entities/outbound-order.entity';
 import { OutboundOrderItem } from './entities/outbound-order-item.entity';
 import { Repository, In } from 'typeorm';
-import { OutboundOrderStatus } from '@shared/types';
+import { OutboundOrderStatus, PaymentStatus } from '@shared/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import type { ISafeClient } from '@shared/types';
@@ -20,7 +20,11 @@ export class OutboundOrdersService {
   constructor(
     @InjectQueue('outbound-order-processing')
     private orderProcessingQueue: Queue,
+    @InjectQueue('stock-updates')
+    private stockProcessingQueue: Queue,
+
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
+    @Inject('PAYMENTS_SERVICE') private paymentClient: ISafeClient,
     @InjectRepository(OutboundOrder)
     private outboundOrderRepo: Repository<OutboundOrder>,
     @InjectRepository(OutboundOrderItem)
@@ -46,7 +50,7 @@ export class OutboundOrdersService {
           created_by: dto.user_id,
           total_amount: totalAmount,
           total_products: dto.items.length,
-          status: OutboundOrderStatus.RESERVING, // set status inside the same tx
+          status: OutboundOrderStatus.RESERVING,
         });
         const savedOrder = await manager.save(OutboundOrder, order);
 
@@ -224,63 +228,114 @@ export class OutboundOrdersService {
     };
   }
 
-  async confirm(order_id: string) {
-    const order = await this.outboundOrderRepo.findOne({
-      where: { id: order_id },
-      select: { id: true, status: true },
+  async confirm(orderId: string, staffUserId: string) {
+    const order = await this.outboundOrderRepo.findOneOrFail({
+      where: { id: orderId },
     });
-    if (!order) throw new NotFoundException(`Order ${order_id} wasn't found`);
 
     if (order.status !== OutboundOrderStatus.RESERVED) {
       throw new ConflictException(
-        `Order ${order_id} is not reserved — current status: ${order.status}`,
+        `Cannot confirm order in status ${order.status}`,
       );
     }
 
-    // Get all items (they were reserved with their full quantity)
+    const payment = await this.paymentClient.send('findPaymentForOrder', {
+      order_id: orderId,
+    });
+    if (!payment || payment.status !== PaymentStatus.CONFIRMED) {
+      throw new ConflictException('Order has no confirmed payment');
+    }
+
     const items = await this.outboundOrderItemRepo.find({
-      where: { outbound_order_id: order_id },
-      select: {
-        id: true,
-        product_id: true,
-        quantity: true, // This is the quantity that was reserved
-      },
+      where: { outbound_order_id: orderId },
     });
 
-    await this.outboundOrderRepo.update(
-      { id: order_id },
-      { status: OutboundOrderStatus.CONFIRMING },
-    );
-
-    await this.orderProcessingQueue.add(
-      'process_confirm',
-      {
-        order_id,
-        items: items.map((item) => ({
-          item_id: item.id,
-          product_id: item.product_id,
-          quantity: item.quantity, // Deduct the reserved quantity
-        })),
+    const { savedOrder } = await this.outboundOrderRepo.manager.transaction(
+      async (manager) => {
+        await manager.update(
+          OutboundOrder,
+          { id: orderId },
+          {
+            status: OutboundOrderStatus.CONFIRMED,
+            confirmed_by: staffUserId,
+            confirmed_at: new Date(),
+          },
+        );
+        const savedOrder = await manager.findOneOrFail(OutboundOrder, {
+          where: { id: orderId },
+        });
+        return { savedOrder };
       },
-      { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
     );
 
-    return {
-      order_id,
-      status: 'CONFIRMING',
-      message: 'Order is being confirmed in the background',
-    };
+    await this.stockProcessingQueue.addBulk(
+      items.map((item) => ({
+        name: 'fulfill_stock',
+        data: {
+          order_id: orderId,
+          item_id: item.id,
+          warehouse_id: order.warehouse_id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+        },
+        opts: { attempts: 5, backoff: { type: 'exponential', delay: 1000 } },
+      })),
+    );
+
+    return savedOrder;
   }
 
-  async cancel(id: string) {
+  async cancel(id: string, user_id: string) {
     const order = await this.outboundOrderRepo.findOneBy({ id });
-    if (order?.status !== OutboundOrderStatus.PENDING) {
+    if (!order) {
+      throw new NotFoundException(`Order ${id} not found`);
+    }
+
+    if (
+      order.status !== OutboundOrderStatus.PENDING &&
+      order.status !== OutboundOrderStatus.RESERVED
+    ) {
       throw new ConflictException(
-        `Only pending orders can be cancelled — current status: ${order?.status}`,
+        `Only pending or reserved orders can be cancelled — current status: ${order.status}`,
       );
     }
-    order.status = OutboundOrderStatus.CANCELLED;
-    await this.outboundOrderRepo.save(order);
+
+    const hadReservation = order.status === OutboundOrderStatus.RESERVED;
+
+    const items = hadReservation
+      ? await this.outboundOrderItemRepo.find({
+          where: { outbound_order_id: id },
+        })
+      : [];
+
+    await this.outboundOrderRepo.manager.transaction(async (manager) => {
+      await manager.update(
+        OutboundOrder,
+        { id },
+        {
+          status: hadReservation
+            ? OutboundOrderStatus.CANCELLING
+            : OutboundOrderStatus.CANCELLED,
+          cancalled_by: user_id,
+        },
+      );
+    });
+
+    if (hadReservation) {
+      await this.stockProcessingQueue.addBulk(
+        items.map((item) => ({
+          name: 'cancel_stock',
+          data: {
+            order_id: id,
+            item_id: item.id,
+            warehouse_id: order.warehouse_id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+          },
+          opts: { attempts: 5, backoff: { type: 'exponential', delay: 1000 } },
+        })),
+      );
+    }
   }
 
   async markNeedsAttention(data: {
