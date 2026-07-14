@@ -113,7 +113,6 @@ Service   Service     Service    Service
 | SSE                      | Notification Service (real-time dashboard) |
 | Guards                   | API Gateway (JWT + RolesGuard)             |
 | Custom Exception Filters | All services                               |
-| Jest Testing             | All services                               |
 
 ---
 
@@ -156,10 +155,6 @@ Service   Service     Service    Service
 **payments**
 
 - id, outbound_order_id, amount, status (pending/success/failed), payment_method
-
-**stock_transfers**
-
-- id, from_warehouse_id, to_warehouse_id, product_id, quantity, status, created_by
 
 ---
 
@@ -244,4 +239,6 @@ wms-platform/
 - `/warehouses` — Warehouses list, add/edit/delete
 - `/inventory` — Stock levels per warehouse, transfer stock
 - `/orders/inbound` — Receive stock
-- `/orders/outbound` — Ship stock, payment
+- `/orders/outbound` — Ship stock
+- `/payments` — payments for outbound orders
+
