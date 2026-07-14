@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   CreateWarehouseDto,
-  UpdateWharehouseDto,
+  UpdateWarehouseMessageDto,
 } from '@shared/dtos/warehouses.dtos';
 import { Warehouse } from './warehouse.entity';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class WarehousesService {
@@ -13,30 +18,42 @@ export class WarehousesService {
     @InjectRepository(Warehouse) private repo: Repository<Warehouse>,
   ) {}
 
-  async create(createWarehouseDto: CreateWarehouseDto) {
-    return await this.repo.save({
-      user_id: createWarehouseDto.user_id,
-      name: createWarehouseDto.name,
-      location: createWarehouseDto.location,
-      capacity: createWarehouseDto.capacity,
+  async create(dto: CreateWarehouseDto) {
+    return this.repo.save({
+      name: dto.name,
+      location: dto.location,
+      capacity: dto.capacity,
     });
   }
 
-  async findAll() {
-    // todo: add pagination later
-    return await this.repo.find({
-      order: { created_at: 'DESC' },
-      select: {
-        id: true,
-        name: true,
-        location: true,
-        capacity: true,
-      },
-    });
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+  ): Promise<Pagination<Warehouse>> {
+    const queryBuilder = this.repo.createQueryBuilder('warehouse');
+
+    if (search) {
+      queryBuilder.where(
+        'warehouse.name ILIKE :search OR warehouse.location ILIKE :search',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder
+      .select([
+        'warehouse.id',
+        'warehouse.name',
+        'warehouse.location',
+        'warehouse.capacity',
+      ])
+      .orderBy('warehouse.created_at', 'DESC');
+
+    return paginate<Warehouse>(queryBuilder, { page, limit });
   }
 
   async findOne(id: string) {
-    const doesExist = await this.repo.findOne({
+    const warehouse = await this.repo.findOne({
       where: { id },
       select: {
         id: true,
@@ -46,43 +63,35 @@ export class WarehousesService {
         created_at: true,
       },
     });
-    if (!doesExist) throw new NotFoundException("This warehouse doesn't exist");
-    return doesExist;
+    if (!warehouse) throw new NotFoundException('Warehouse not found');
+    return warehouse;
   }
 
-  async update(updateWarehouseDto: UpdateWharehouseDto) {
-    const doesExist = await this.repo.findOneBy({ id: updateWarehouseDto.id });
-    if (!doesExist) throw new NotFoundException("This warehouse doesn't exist");
+  async update(dto: UpdateWarehouseMessageDto) {
+    const exists = await this.repo.findOneBy({ id: dto.id });
+    if (!exists) throw new NotFoundException('Warehouse not found');
 
-    return await this.repo.update(
+    await this.repo.update(
+      { id: dto.id },
       {
-        id: updateWarehouseDto.id,
-      },
-      {
-        capacity: updateWarehouseDto.capacity,
-        name: updateWarehouseDto.name,
-        location: updateWarehouseDto.location,
+        name: dto.name,
+        location: dto.location,
+        capacity: dto.capacity,
       },
     );
   }
 
   async remove(id: string) {
-    const doesExist = await this.repo.findOneBy({ id });
-    if (!doesExist) throw new NotFoundException("This warehouse doesn't exist");
-
-    return await this.repo.delete({ id });
+    const exists = await this.repo.findOneBy({ id });
+    if (!exists) throw new NotFoundException('Warehouse not found');
+    await this.repo.delete({ id });
   }
 
-  async doesWarehouseExist(id: string) {
+  async doesWarehouseExist(id: string): Promise<boolean> {
     const warehouse = await this.repo.findOne({
-      where: {
-        id,
-      },
-      select: {
-        id: true,
-      },
+      where: { id },
+      select: { id: true },
     });
-    if (!warehouse) return false;
-    return true;
+    return !!warehouse;
   }
 }

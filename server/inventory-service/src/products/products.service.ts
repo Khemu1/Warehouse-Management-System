@@ -1,14 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './products.entity';
 import { In, Repository } from 'typeorm';
-import { CreateProductDto, UpdateProductDto } from '@shared/dtos/products.dto';
+import { CreateProductDto, UpdateProductMessageDto } from '@shared/dtos/products.dto';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class ProductsService {
   constructor(@InjectRepository(Product) private repo: Repository<Product>) {}
 
   async createProduct(dto: CreateProductDto) {
+    const existing = await this.repo.findOne({ where: { sku: dto.sku } });
+    if (existing) {
+      throw new ConflictException(
+        `Product with SKU "${dto.sku}" already exists`,
+      );
+    }
+
     return await this.repo.save({
       name: dto.name,
       description: dto.description || '',
@@ -18,7 +30,14 @@ export class ProductsService {
     });
   }
 
-  async updateProduct(dto: UpdateProductDto) {
+  async updateProduct(dto: UpdateProductMessageDto) {
+    const existing = await this.repo.findOne({ where: { sku: dto.sku } });
+    if (existing && existing.id !== dto.id) {
+      throw new ConflictException(
+        `Product with SKU "${dto.sku}" already exists`,
+      );
+    }
+
     const doesExist = await this.repo.findOne({
       where: {
         id: dto.id,
@@ -82,5 +101,24 @@ export class ProductsService {
       allExist: missingIds.length === 0,
       missingIds,
     };
+  }
+
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+  ): Promise<Pagination<Product>> {
+    const queryBuilder = this.repo.createQueryBuilder('product');
+
+    if (search) {
+      queryBuilder.where(
+        'product.name ILIKE :search OR product.sku ILIKE :search',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder.orderBy('product.created_at', 'DESC');
+
+    return paginate<Product>(queryBuilder, { page, limit });
   }
 }

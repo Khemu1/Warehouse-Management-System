@@ -22,7 +22,7 @@ export class Warehouse {
   @Column({ nullable: true })
   user_id: string;
 
-  @Column('numeric')
+  @Column('integer')
   capacity: number;
 
   @CreateDateColumn()

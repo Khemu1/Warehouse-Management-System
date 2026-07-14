@@ -19,7 +19,7 @@ export class Product {
   @Column('text')
   description: string;
 
-  @Column('text')
+  @Column({ unique: true })
   sku: string;
 
   @Column('decimal', { precision: 10, scale: 2 })

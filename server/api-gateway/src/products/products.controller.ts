@@ -6,11 +6,12 @@ import {
   Param,
   Put,
   Post,
+  Query,
   HttpCode,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { CreateProductDto } from '@shared/dtos/products.dto';
+import { CreateProductDto, UpdateProductDto } from '@shared/dtos/products.dto';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { Roles } from '@shared/types';
 import type { JwtPayload, ISafeClient } from '@shared/types';
@@ -22,61 +23,65 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
+@AllowedRoles(Roles.ADMIN, Roles.STAFF)
 export class ProductsController {
   constructor(
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
   ) {}
 
-  @AllowedRoles(Roles.ADMIN)
-  @Post('')
-  @ApiOperation({ summary: 'Create a new product' })
-  @ApiBody({ type: CreateProductDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Product created successfully',
-    // Use any or create a simple response type
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', format: 'uuid' },
-        name: { type: 'string' },
-        // Add other product properties
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  createProduct(@Body() dto: CreateProductDto, @User() user: JwtPayload) {
-    console.log('now calling createProduct');
-    return this.inventoryClient.send('createProduct', { ...dto, ...user });
-  }
-
-  @AllowedRoles(Roles.ADMIN)
-  @Put(':id')
-  @HttpCode(204)
-  @ApiOperation({ summary: 'Update an existing product' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiBody({ type: CreateProductDto })
-  @ApiResponse({ status: 204, description: 'Product updated successfully' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  updateProduct(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: CreateProductDto,
+  @Get()
+  @ApiOperation({ summary: 'Get all products (paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Paginated products list' })
+  findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
     @User() user: JwtPayload,
   ) {
-    return this.inventoryClient.send('updateProduct', {
-      id,
-      ...dto,
+    return this.inventoryClient.send('findAllProducts', {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
       ...user,
     });
   }
 
-  @AllowedRoles(Roles.ADMIN)
+  @Post()
+  @ApiOperation({ summary: 'Create a new product' })
+  @ApiBody({ type: CreateProductDto })
+  @ApiResponse({ status: 201, description: 'Product created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  createProduct(@Body() dto: CreateProductDto, @User() user: JwtPayload) {
+    return this.inventoryClient.send('createProduct', { ...dto, ...user });
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update an existing product' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiBody({ type: UpdateProductDto })
+  @ApiResponse({ status: 200, description: 'Product updated successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  updateProduct(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProductDto,
+    @User() user: JwtPayload,
+  ) {
+    return this.inventoryClient.send('updateProduct', {
+      ...dto,
+      id,
+      ...user,
+    });
+  }
+
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete a product' })
@@ -87,63 +92,28 @@ export class ProductsController {
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: JwtPayload,
   ) {
-    return this.inventoryClient.send('deleteProduct', {
-      id,
-      ...user,
-    });
+    return this.inventoryClient.send('deleteProduct', { id, ...user });
   }
 
-  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Product details',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', format: 'uuid' },
-        name: { type: 'string' },
-        sku: { type: 'string' },
-        price: { type: 'number' },
-        // Add other product properties
-      },
-    },
-  })
+  @ApiResponse({ status: 200, description: 'Product details' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   getProduct(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
-    return this.inventoryClient.send('findOneProduct', {
-      id: id,
-      ...user,
-    });
+    return this.inventoryClient.send('findOneProduct', { id, ...user });
   }
 
-  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
-  @Get('warehouse/:id') // Fixed: Changed from duplicate ':id' to 'warehouse/:id'
-  @ApiOperation({ summary: 'Get warehouse products' })
+  @Get('warehouse/:id')
+  @ApiOperation({ summary: 'Get products by warehouse' })
   @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of warehouse products',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          name: { type: 'string' },
-          quantity: { type: 'number' },
-          warehouse_id: { type: 'string', format: 'uuid' },
-        },
-      },
-    },
-  })
-  getWharehoueProducts(
+  @ApiResponse({ status: 200, description: 'Warehouse products list' })
+  getWarehouseProducts(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: JwtPayload,
   ) {
-    return this.inventoryClient.send('findWharehouseProducts', {
-      id: id,
+    return this.inventoryClient.send('findWarehouseProducts', {
+      id,
       ...user,
     });
   }

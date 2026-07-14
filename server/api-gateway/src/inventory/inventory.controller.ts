@@ -6,8 +6,9 @@ import {
   Post,
   ParseUUIDPipe,
   Inject,
+  Query,
 } from '@nestjs/common';
-import { ReserveStockDto, CheckStockDto } from '@shared/dtos/inventory.dtos';
+import { CheckStockDto } from '@shared/dtos/inventory.dtos';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { Roles } from '@shared/types';
 import type { JwtPayload, ISafeClient } from '@shared/types';
@@ -20,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Inventory') // Groups all endpoints under "Inventory" in Swagger
@@ -86,26 +88,24 @@ export class InventoryController {
   }
 
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)
-  @Post('reserve')
-  @ApiOperation({
-    summary: 'Reserve stock items',
-    description: 'Reserve inventory items for an order',
-  })
-  @ApiBody({
-    type: ReserveStockDto,
-    description: 'Stock reservation details',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Items reserved successfully',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Conflict - Insufficient stock',
-  })
-  reserveStock(@Body() dto: ReserveStockDto, @User() user: JwtPayload) {
-    return this.inventoryClient.send('reserveInventoryItems', {
-      ...dto,
+  @Get()
+  @ApiOperation({ summary: 'Get all inventory items (paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'warehouse_id', required: false, type: String })
+  findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
+    @Query('warehouse_id') warehouse_id: string = '',
+    @User() user: JwtPayload,
+  ) {
+    return this.inventoryClient.send('findAllInventory', {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+      warehouse_id: warehouse_id || undefined,
       ...user,
     });
   }

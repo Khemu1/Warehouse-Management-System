@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CheckStockDto, ReserveStockDto } from '@shared/dtos/inventory.dtos';
 
 @Controller()
@@ -17,6 +17,24 @@ export class InventoryController {
   @MessagePattern('findWarehouseProducts')
   async getwarehouseProducts(data: { id: string }) {
     return await this.inventoryService.findWarehouseProducts(data.id);
+  }
+
+  @MessagePattern('findAllInventory')
+  async findAll(
+    @Payload()
+    data: {
+      page: number;
+      limit: number;
+      search: string;
+      warehouse_id?: string;
+    },
+  ) {
+    return this.inventoryService.findAll(
+      data.page,
+      data.limit,
+      data.search,
+      data.warehouse_id,
+    );
   }
 
   @MessagePattern('health.check')

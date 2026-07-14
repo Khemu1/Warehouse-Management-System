@@ -1,28 +1,43 @@
-import {
-  IsNumber,
-  IsString,
-  MaxLength,
-  Min,
-  MinLength,
-} from "class-validator";
-import { AuthenticatedDto } from "./base.dto";
+import { IsNumber, IsString, IsUUID, Min, MinLength } from "class-validator";
 
-export class CreateWarehouseDto extends AuthenticatedDto {
+export class CreateWarehouseDto {
   @IsString()
-  @MinLength(3)
-  @MaxLength(255)
+  @MinLength(2)
   name: string;
 
   @IsString()
-  @MinLength(5)
   location: string;
 
   @IsNumber()
-  @Min(10)
+  @Min(1)
   capacity: number;
 }
 
-export class UpdateWharehouseDto extends CreateWarehouseDto {
+export class UpdateWarehouseDto {
   @IsString()
+  @MinLength(2)
+  name: string;
+
+  @IsString()
+  location: string;
+
+  @IsNumber()
+  @Min(1)
+  capacity: number;
+}
+
+export class UpdateWarehouseMessageDto {
+  @IsUUID()
   id: string;
+
+  @IsString()
+  @MinLength(2)
+  name: string;
+
+  @IsString()
+  location: string;
+
+  @IsNumber()
+  @Min(1)
+  capacity: number;
 }

@@ -3,41 +3,44 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { WarehousesService } from './warehouses.service';
 import {
   CreateWarehouseDto,
-  UpdateWharehouseDto,
+  UpdateWarehouseMessageDto,
 } from '@shared/dtos/warehouses.dtos';
+
 @Controller()
 export class WarehousesController {
-  constructor(private readonly WarehousesService: WarehousesService) {}
-
-  @MessagePattern('createWarehouse')
-  async create(@Payload() createWarehouseDto: CreateWarehouseDto) {
-    return await this.WarehousesService.create(createWarehouseDto);
-  }
+  constructor(private readonly warehousesService: WarehousesService) {}
 
   @MessagePattern('findAllWarehouses')
-  async findAll() {
-    return this.WarehousesService.findAll();
+  async findAll(
+    @Payload() data: { page: number; limit: number; search: string },
+  ) {
+    return this.warehousesService.findAll(data.page, data.limit, data.search);
   }
 
   @MessagePattern('findOneWarehouse')
   async findOne(@Payload() data: { id: string }) {
-    return this.WarehousesService.findOne(data.id);
+    return this.warehousesService.findOne(data.id);
+  }
+
+  @MessagePattern('createWarehouse')
+  async create(@Payload() dto: CreateWarehouseDto) {
+    return this.warehousesService.create(dto);
   }
 
   @MessagePattern('updateWarehouse')
-  async update(@Payload() updateEventDto: UpdateWharehouseDto) {
-    await this.WarehousesService.update(updateEventDto);
+  async update(@Payload() dto: UpdateWarehouseMessageDto) {
+    await this.warehousesService.update(dto);
     return {};
   }
 
   @MessagePattern('deleteWarehouse')
   async remove(@Payload() data: { id: string }) {
-    await this.WarehousesService.remove(data.id);
+    await this.warehousesService.remove(data.id);
     return {};
   }
 
   @MessagePattern('doesWarehouseExist')
   async doesExist(@Payload() data: { id: string }) {
-    return await this.WarehousesService.doesWarehouseExist(data.id);
+    return this.warehousesService.doesWarehouseExist(data.id);
   }
 }

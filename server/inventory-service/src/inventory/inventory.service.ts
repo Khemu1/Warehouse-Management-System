@@ -8,6 +8,7 @@ import { In, QueryFailedError, Repository } from 'typeorm';
 import { CheckStockDto, ReserveStockDto } from '@shared/dtos/inventory.dtos';
 import { Inventory } from './entities/inventory.entity';
 import { StockMovement } from './entities/stock-movement.entity';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class InventoryService {
@@ -16,6 +17,47 @@ export class InventoryService {
     @InjectRepository(StockMovement)
     private movementRepo: Repository<StockMovement>,
   ) {}
+
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    warehouse_id?: string,
+  ): Promise<Pagination<Inventory>> {
+    const queryBuilder = this.repo
+      .createQueryBuilder('inventory')
+      .leftJoinAndSelect('inventory.product', 'product')
+      .leftJoinAndSelect('inventory.warehouse', 'warehouse');
+
+    if (warehouse_id) {
+      queryBuilder.andWhere('inventory.warehouse_id = :warehouse_id', {
+        warehouse_id,
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(product.name ILIKE :search OR product.sku ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder
+      .select([
+        'inventory.id',
+        'inventory.quantity',
+        'inventory.reserved_quantity',
+        'product.id',
+        'product.name',
+        'product.sku',
+        'product.low_stock_threshold',
+        'warehouse.id',
+        'warehouse.name',
+      ])
+      .orderBy('product.name', 'ASC');
+
+    return paginate<Inventory>(queryBuilder, { page, limit });
+  }
 
   async check(data: CheckStockDto) {
     const result = await this.repo.find({

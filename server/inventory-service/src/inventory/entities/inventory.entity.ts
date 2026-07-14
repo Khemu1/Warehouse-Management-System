@@ -18,14 +18,14 @@ export class Inventory {
   @Column('uuid', { nullable: true })
   warehouse_id: string;
 
-  @ManyToOne(() => Warehouse)
+  @ManyToOne(() => Warehouse, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'warehouse_id' })
   warehouse: Warehouse;
 
   @Column('uuid', { nullable: true })
   product_id: string;
 
-  @ManyToOne(() => Product)
+  @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })
   product: Product;
 

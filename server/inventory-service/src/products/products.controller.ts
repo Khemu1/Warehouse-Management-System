@@ -1,7 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { CreateProductDto, UpdateProductDto } from '@shared/dtos/products.dto';
+import {
+  CreateProductDto,
+  UpdateProductMessageDto,
+} from '@shared/dtos/products.dto';
 
 @Controller()
 export class ProductsController {
@@ -12,7 +15,7 @@ export class ProductsController {
     return await this.productsService.createProduct(dto);
   }
   @MessagePattern('updateProduct')
-  async updateProduct(@Payload() dto: UpdateProductDto) {
+  async updateProduct(@Payload() dto: UpdateProductMessageDto) {
     await this.productsService.updateProduct(dto);
     return {};
   }
@@ -29,5 +32,15 @@ export class ProductsController {
   @MessagePattern('doesProductsExist')
   async doesExist(@Payload() ids: string[]) {
     return await this.productsService.doesProductsExist(ids);
+  }
+  @MessagePattern('findAllProducts')
+  async findAll(
+    @Payload() data: { page: number; limit: number; search: string },
+  ) {
+    return await this.productsService.findAll(
+      data.page,
+      data.limit,
+      data.search,
+    );
   }
 }

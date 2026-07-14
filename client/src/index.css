@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 220 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 15%;
+    --primary: 215 52% 47%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 220 6% 92%;
+    --secondary-foreground: 220 10% 15%;
+    --muted: 220 6% 92%;
+    --muted-foreground: 220 5% 45%;
+    --accent: 215 52% 95%;
+    --accent-foreground: 215 52% 30%;
+    --destructive: 0 43% 49%; /* Red */
+    --destructive-foreground: 210 40% 98%; /* Near white */
+    --border: 220 8% 88%;
+    --input: 220 8% 88%;
+    --ring: 215 52% 47%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .order-id,
+  .sku-code,
+  .bin-location {
+    @apply font-mono tracking-wider font-medium;
+  }
+}
