@@ -5,7 +5,7 @@ export class Migrations1783901921177 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "outbound_order" ADD "cancalled_by" uuid`,
+      `ALTER TABLE "outbound_order" ADD "cancelled_by" uuid`,
     );
     await queryRunner.query(
       `ALTER TYPE "public"."outbound_order_status_enum" RENAME TO "outbound_order_status_enum_old"`,
@@ -46,7 +46,7 @@ export class Migrations1783901921177 implements MigrationInterface {
       `ALTER TYPE "public"."outbound_order_status_enum_old" RENAME TO "outbound_order_status_enum"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "outbound_order" DROP COLUMN "cancalled_by"`,
+      `ALTER TABLE "outbound_order" DROP COLUMN "cancelled_by"`,
     );
   }
 }

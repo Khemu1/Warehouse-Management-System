@@ -7,9 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreatePaymentDto } from '@shared/dtos/payment.dto';
 import { Payment } from './entities/payment.entity';
-import { Not, QueryFailedError, Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { OutboundOrderStatus, type ISafeClient } from '@shared/types';
 import { PaymentStatus } from '@shared/types';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class PaymentService {
@@ -62,17 +63,28 @@ export class PaymentService {
     }
   }
 
-  async findAll() {
-    return await this.repo.find({
-      select: {
-        id: true,
-        order_id: true,
-        status: true,
-        payment_method: true,
-        total_amount: true,
-        created_at: true,
-      },
-    });
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+  ): Promise<Pagination<Payment>> {
+    const queryBuilder = this.repo
+      .createQueryBuilder('payment')
+      .select([
+        'payment.id',
+        'payment.order_id',
+        'payment.status',
+        'payment.payment_method',
+        'payment.total_amount',
+        'payment.created_at',
+      ])
+      .orderBy('payment.created_at', 'DESC');
+
+    if (status) {
+      queryBuilder.andWhere('payment.status = :status', { status });
+    }
+
+    return paginate<Payment>(queryBuilder, { page, limit });
   }
 
   async findOne(id: string) {

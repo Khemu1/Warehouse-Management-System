@@ -36,6 +36,10 @@ export class InventoryController {
       data.warehouse_id,
     );
   }
+  @MessagePattern('didItemMove')
+  async didItemMove(@Payload() data: { idempotency_key: string }) {
+    return this.inventoryService.didItemMove(data.idempotency_key);
+  }
 
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {

@@ -116,24 +116,22 @@ export class StockUpdatesProcessor extends WorkerHost {
         break;
 
       case 'reserve_stock':
-        // await this.ordersClient.emit('outboundItemStockReserved', {
-        //   order_id,
-        //   item_id,
-        // });
+        await this.ordersClient.emit('outboundItemStockReserved', {
+          order_id,
+          item_id,
+        });
         break;
-
       case 'fulfill_stock':
-        // await this.ordersClient.emit('outboundItemStockFulfilled', {
-        //   order_id,
-        //   item_id,
-        // });
+        await this.ordersClient.emit('outboundItemStockFulfilled', {
+          order_id,
+          item_id,
+        });
         break;
-
       case 'cancel_stock':
-        // await this.ordersClient.emit('outboundItemStockReleased', {
-        //   order_id,
-        //   item_id,
-        // });
+        await this.ordersClient.emit('outboundItemStockReleased', {
+          order_id,
+          item_id,
+        });
         break;
 
       default:

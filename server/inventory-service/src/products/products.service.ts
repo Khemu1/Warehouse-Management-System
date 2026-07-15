@@ -132,8 +132,6 @@ export class ProductsService {
         id: true,
         name: true,
         sku: true,
-        unit_price: true,
-        low_stock_threshold: true,
       },
     });
   }

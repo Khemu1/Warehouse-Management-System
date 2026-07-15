@@ -1,3 +1,5 @@
+import type { Pagination } from "..";
+
 export interface InboundOrderItem {
   id: string;
   product_id: string;
@@ -24,6 +26,11 @@ export interface InboundOrder {
   created_by: string;
   created_at: string;
   item_count: number;
+}
+
+export interface InboundOrdersResponse {
+  items: InboundOrder[];
+  meta: Pagination;
 }
 
 interface Product {

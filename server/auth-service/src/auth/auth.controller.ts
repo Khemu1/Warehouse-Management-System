@@ -50,6 +50,11 @@ export class AuthController {
     );
   }
 
+  @MessagePattern('findUsersByIds')
+  async findUsersByIds(@Payload() ids: string[]) {
+    return this.authService.findByIds(ids);
+  }
+
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {
     return {

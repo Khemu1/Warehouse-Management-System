@@ -43,9 +43,7 @@ export class OutboundOrdersProcessor extends WorkerHost {
     });
 
     for (const batch of chunk(items, BATCH_SIZE)) {
-      console.log(
-        `order ${order_id}: processing batch of ${batch.length} items`,
-      );
+
 
       await this.stockQueue.addBulk(
         batch.map((itemDto) => ({

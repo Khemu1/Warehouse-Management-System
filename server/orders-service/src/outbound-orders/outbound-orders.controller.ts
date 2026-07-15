@@ -25,8 +25,21 @@ export class OutboundOrdersController {
   }
 
   @MessagePattern('findAllOutboundOrders')
-  async findAll(@Payload() data: { warehouse_id?: string }) {
-    return await this.outboundOrdersService.findAll(data.warehouse_id);
+  async findAll(
+    @Payload()
+    data: {
+      page: number;
+      limit: number;
+      search: string;
+      warehouse_id?: string;
+    },
+  ) {
+    return this.outboundOrdersService.findAll(
+      data.page,
+      data.limit,
+      data.search,
+      data.warehouse_id,
+    );
   }
 
   @MessagePattern('findOneOutboundOrder')
@@ -37,9 +50,32 @@ export class OutboundOrdersController {
       returnAll?: boolean;
       specifiedColumns?: (keyof OutboundOrder)[];
       withRelations?: boolean;
+      enrich?: boolean;
     },
   ) {
+    console.log('data , ', data);
     return await this.outboundOrdersService.findOne(data);
+  }
+
+  @EventPattern('outboundItemStockReserved')
+  async handleStockReserved(
+    @Payload() data: { order_id: string; item_id: string },
+  ) {
+    await this.outboundOrdersService.checkAllReserved(data.order_id);
+  }
+
+  @EventPattern('outboundItemStockFulfilled')
+  async handleStockFulfilled(
+    @Payload() data: { order_id: string; item_id: string },
+  ) {
+    await this.outboundOrdersService.checkAllFulfilled(data.order_id);
+  }
+
+  @EventPattern('outboundItemStockReleased')
+  async handleStockReleased(
+    @Payload() data: { order_id: string; item_id: string },
+  ) {
+    await this.outboundOrdersService.checkAllReleased(data.order_id);
   }
 
   @EventPattern('outboundItemStockFailed')

@@ -57,4 +57,15 @@ export class AuthService {
 
     return user;
   }
+
+  async findByIds(ids: string[]) {
+    return this.repo.find({
+      where: { id: In(ids) },
+      select: {
+        id: true,
+        role: true,
+        name: true,
+      },
+    });
+  }
 }

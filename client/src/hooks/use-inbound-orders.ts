@@ -1,18 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import type { EnrichedOrder, InboundOrder } from "@/types/orders/inbound";
+import type { EnrichedOrder, InboundOrdersResponse } from "@/types/orders/inbound";
 import { apiFetch, isAPIError } from "@/services";
-
-interface InboundOrdersResponse {
-  items: InboundOrder[];
-  meta: {
-    totalItems: number;
-    itemCount: number;
-    itemsPerPage: number;
-    totalPages: number;
-    currentPage: number;
-  };
-}
 
 export function useInboundOrders(
   page = 1,

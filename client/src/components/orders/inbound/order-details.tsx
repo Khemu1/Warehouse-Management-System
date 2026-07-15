@@ -93,7 +93,7 @@ export function InboundOrderDetails({ order, onClose }: Props) {
             {data?.inbound_items?.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-md border p-3"
+                className="flex items-center justify-between rounded-md border bg-white p-3"
               >
                 <div>
                   <p className="text-sm font-medium">

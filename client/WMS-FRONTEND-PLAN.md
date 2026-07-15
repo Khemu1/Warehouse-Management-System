@@ -52,21 +52,20 @@
 
 **Endpoints:** `GET/POST /orders/outbound`
 
-- [ ] Create outbound order form
-- [ ] Select warehouse, customer, products + quantities
-- [ ] Stock validation (can't ship more than available)
-- [ ] Status flow: pending → confirmed → shipped
-- [ ] Cancel order (releases reserved stock)
-- [ ] Table with all outbound orders
+- [x] Create outbound order form
+- [x] Select warehouse, customer, products + quantities
+- [x] Stock validation (can't ship more than available)
+- [x] Status flow: pending → confirmed → shipped
+- [x] Cancel order (releases reserved stock)
+- [x] Table with all outbound orders
 
 ### 6. Payments Page — `/payments`
 
 **Endpoint:** `GET /payments`
 
-- [ ] Table with all payments
-- [ ] Filter by status (pending/success/failed)
-- [ ] Link to outbound order
-- [ ] Read-only (no create/edit)
+- [x] Table with all payments
+- [x] Filter by status (pending/success/failed)
+- [x] Link to outbound order
 
 ### 7. Dashboard Page — `/dashboard`
 

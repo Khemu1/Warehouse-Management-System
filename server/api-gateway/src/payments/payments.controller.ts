@@ -34,10 +34,22 @@ export class PaymentsController {
       ...user,
     });
   }
-  @Get('')
-  findAll(@Query() id: string, @User() user: JwtPayload) {
+
+  @Get('order/:orderId')
+  getPaymentForOrder(@Param('orderId') orderId: string) {
+    return this.paymentsClient.send('findPaymentForOrder', { id: orderId });
+  }
+  @Get()
+  findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @User() user: JwtPayload,
+    @Query('status') status?: string,
+  ) {
     return this.paymentsClient.send('findAllPayments', {
-      id,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      status,
       ...user,
     });
   }

@@ -2,6 +2,7 @@ import { SafeClientProxy } from '@shared/safe-client-proxy';
 import { Global, Module } from '@nestjs/common';
 import { ClientsModule, ClientProxy, Transport } from '@nestjs/microservices';
 
+const RAW_AUTH = 'AUTH_SERVICE_RAW';
 const RAW_INVENTORY = 'INVENTORY_SERVICE_RAW';
 const RAW_ORDERS = 'ORDERS_SERVICE_RAW';
 const RAW_PAYMENTS = 'PAYMENTS_SERVICE_RAW';
@@ -10,6 +11,15 @@ const RAW_PAYMENTS = 'PAYMENTS_SERVICE_RAW';
 @Module({
   imports: [
     ClientsModule.register([
+      {
+        name: RAW_AUTH,
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL!],
+          queue: 'auth_queue',
+        },
+      },
+
       {
         name: RAW_INVENTORY,
         transport: Transport.RMQ,
@@ -46,7 +56,17 @@ const RAW_PAYMENTS = 'PAYMENTS_SERVICE_RAW';
       useFactory: (client: ClientProxy) => new SafeClientProxy(client),
       inject: [RAW_PAYMENTS],
     },
+    {
+      provide: 'AUTH_SERVICE',
+      useFactory: (client: ClientProxy) => new SafeClientProxy(client),
+      inject: [RAW_AUTH],
+    },
   ],
-  exports: ['INVENTORY_SERVICE', 'ORDERS_SERVICE', 'PAYMENTS_SERVICE'],
+  exports: [
+    'INVENTORY_SERVICE',
+    'ORDERS_SERVICE',
+    'PAYMENTS_SERVICE',
+    'AUTH_SERVICE',
+  ],
 })
 export class AppClientsModule {}

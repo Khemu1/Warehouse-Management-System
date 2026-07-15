@@ -13,12 +13,13 @@ export class PaymentController {
   }
 
   @MessagePattern('findAllPayments')
-  findAll() {
-    return this.paymentService.findAll();
+  findAll(@Payload() data: { page: number; limit: number; status?: string }) {
+    return this.paymentService.findAll(data.page, data.limit, data.status);
   }
 
   @MessagePattern('findPaymentForOrder')
   findPaymentForOrder(@Payload() data: { id: string }) {
+    console.log('find payment for order ',data);
     return this.paymentService.findOneForOrder(data.id);
   }
 

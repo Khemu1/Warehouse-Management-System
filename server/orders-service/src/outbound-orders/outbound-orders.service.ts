@@ -14,6 +14,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import type { ISafeClient } from '@shared/types';
 import { OutboundOrderFailure } from './entities/outbound-order-failure.entity';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class OutboundOrdersService {
@@ -25,6 +26,7 @@ export class OutboundOrdersService {
 
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
     @Inject('PAYMENTS_SERVICE') private paymentClient: ISafeClient,
+    @Inject('AUTH_SERVICE') private authClient: ISafeClient,
     @InjectRepository(OutboundOrder)
     private outboundOrderRepo: Repository<OutboundOrder>,
     @InjectRepository(OutboundOrderItem)
@@ -155,12 +157,32 @@ export class OutboundOrdersService {
     }
   }
 
-  findAll(warehouse_id?: string) {
-    return this.outboundOrderRepo.find({
-      where: warehouse_id ? { warehouse_id } : {},
-      relations: { outbound_items: true },
-      order: { created_at: 'DESC' },
-    });
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    warehouse_id?: string,
+  ): Promise<Pagination<OutboundOrder>> {
+    const queryBuilder = this.outboundOrderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.outbound_items', 'items')
+      .addSelect(['items.id'])
+      .loadRelationCountAndMap('order.item_count', 'order.outbound_items')
+      .orderBy('order.created_at', 'DESC');
+
+    if (warehouse_id) {
+      queryBuilder.andWhere('order.warehouse_id = :warehouse_id', {
+        warehouse_id,
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('order.customer_name ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    return paginate<OutboundOrder>(queryBuilder, { page, limit });
   }
 
   async findOne(data: {
@@ -168,6 +190,7 @@ export class OutboundOrdersService {
     returnAll?: boolean;
     specifiedColumns?: (keyof OutboundOrder)[];
     withRelations?: boolean;
+    enrich?: boolean;
   }) {
     const order = await this.outboundOrderRepo.findOne({
       where: { id: data.id },
@@ -175,11 +198,67 @@ export class OutboundOrdersService {
       relations:
         data.withRelations === false ? undefined : { outbound_items: true },
     });
+
     if (!order)
       throw new NotFoundException(`Outbound order ${data.id} not found`);
-    return order;
-  }
 
+    if (!data.enrich) return order;
+
+    const warehouse = await this.inventoryClient.send('findOneWarehouse', {
+      id: order.warehouse_id,
+    });
+
+    const userIds = [
+      order.created_by,
+      order.confirmed_by,
+      order.cancelled_by,
+    ].filter(Boolean);
+    const users = await this.authClient.send('findUsersByIds', userIds);
+    const userMap: Map<string, { name: string }> = new Map(
+      users.map((u: any) => [u.id, u]),
+    );
+
+    const productIds = order.outbound_items.map((item) => item.product_id);
+    const products = await this.inventoryClient.send(
+      'findProductsByIds',
+      productIds,
+    );
+    const productMap = new Map(products.map((p: any) => [p.id, p]));
+
+    let failures: any[] = [];
+    if (order.status === OutboundOrderStatus.NEEDS_ATTENTION) {
+      failures = await this.failureRepo.find({
+        where: { order_id: data.id, resolved: false },
+        order: { created_at: 'DESC' },
+      });
+    }
+
+    let payment: any = null;
+    try {
+      payment = await this.paymentClient.send('findPaymentForOrder', {
+        order_id: data.id,
+      });
+    } catch {
+      // Payment service might be down — don't fail the whole request
+    }
+
+    return {
+      ...order,
+      warehouse_name: warehouse?.name ?? 'Unknown',
+      created_by_user: userMap.get(order.created_by) || null,
+      confirmed_by_user: userMap.get(order.confirmed_by) || null,
+      cancelled_by_user: userMap.get(order.cancelled_by) || null,
+      created_by: undefined,
+      confirmed_by: undefined,
+      cancelled_by: undefined,
+      failures,
+      payment: payment || null,
+      outbound_items: order.outbound_items.map((item) => ({
+        ...item,
+        product: productMap.get(item.product_id) || null,
+      })),
+    };
+  }
   async reserve(order_id: string) {
     const order = await this.outboundOrderRepo.findOne({
       where: { id: order_id },
@@ -317,7 +396,7 @@ export class OutboundOrdersService {
           status: hadReservation
             ? OutboundOrderStatus.CANCELLING
             : OutboundOrderStatus.CANCELLED,
-          cancalled_by: user_id,
+          cancelled_by: user_id,
         },
       );
     });
@@ -356,5 +435,101 @@ export class OutboundOrdersService {
       reason: data.reason ?? 'Stock update failed after max retries',
       attempts: data.attempts ?? 0,
     });
+  }
+
+  async checkAllReserved(order_id: string) {
+    const order = await this.outboundOrderRepo.findOne({
+      where: { id: order_id },
+      select: { id: true, status: true },
+    });
+
+    if (!order || order.status !== OutboundOrderStatus.RESERVING) return;
+
+    const items = await this.outboundOrderItemRepo.find({
+      where: { outbound_order_id: order_id },
+      select: { id: true },
+    });
+
+    let allReserved = true;
+    for (const item of items) {
+      const moved = await this.inventoryClient.send('didItemMove', {
+        idempotency_key: `${order_id}:${item.id}:reserve_stock`,
+      });
+      if (!moved) {
+        allReserved = false;
+        break;
+      }
+    }
+
+    if (allReserved) {
+      await this.outboundOrderRepo.update(
+        { id: order_id },
+        { status: OutboundOrderStatus.RESERVED },
+      );
+    }
+  }
+
+  async checkAllFulfilled(order_id: string) {
+    const order = await this.outboundOrderRepo.findOne({
+      where: { id: order_id },
+      select: { id: true, status: true },
+    });
+
+    if (!order || order.status !== OutboundOrderStatus.CONFIRMED) return;
+
+    const items = await this.outboundOrderItemRepo.find({
+      where: { outbound_order_id: order_id },
+      select: { id: true },
+    });
+
+    let allFulfilled = true;
+    for (const item of items) {
+      const moved = await this.inventoryClient.send('didItemMove', {
+        idempotency_key: `${order_id}:${item.id}:fulfill_stock`,
+      });
+      if (!moved) {
+        allFulfilled = false;
+        break;
+      }
+    }
+
+    if (allFulfilled) {
+      await this.outboundOrderRepo.update(
+        { id: order_id },
+        { status: OutboundOrderStatus.SHIPPED },
+      );
+    }
+  }
+
+  async checkAllReleased(order_id: string) {
+    const order = await this.outboundOrderRepo.findOne({
+      where: { id: order_id },
+      select: { id: true, status: true },
+    });
+
+    if (!order || order.status !== OutboundOrderStatus.CANCELLING) return;
+
+    const items = await this.outboundOrderItemRepo.find({
+      where: { outbound_order_id: order_id },
+      select: { id: true },
+    });
+
+    let allReleased = true;
+    for (const item of items) {
+      const moved = await this.inventoryClient.send('didItemMove', {
+        idempotency_key: `${order_id}:${item.id}:cancel_stock`,
+      });
+      if (!moved) {
+        allReleased = false;
+        break;
+      }
+    }
+
+    if (allReleased) {
+      await this.outboundOrderRepo.update(
+        { id: order_id },
+        { status: OutboundOrderStatus.CANCELLED },
+      );
+    }
   }
 }

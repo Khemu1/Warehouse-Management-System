@@ -7,6 +7,9 @@ import Products from "@/pages/Products";
 import Warehouses from "./pages/Warehouses";
 import StockLevels from "./pages/StockLevels";
 import InboundOrders from "./pages/InboundOrders";
+import OutboundOrders from "./pages/OutboundOrders";
+import Payments from "./pages/Payments";
+import Pay from "./pages/Pay";
 // import Warehouses from "@/pages/Warehouses";
 // import StockLevels from "@/pages/StockLevels";
 
@@ -24,12 +27,13 @@ export default function App() {
           <Route path="/inventory/warehouses" element={<Warehouses />} />
           <Route path="/inventory/stock" element={<StockLevels />} />
           <Route path="/orders/inbound" element={<InboundOrders />} />
-          <Route path="/orders/outbound" element={<div>Outbound Orders</div>} />
-          <Route path="/payments" element={<div>Payments</div>} />
+          <Route path="/orders/outbound" element={<OutboundOrders />} />
+          <Route path="/payments" element={<Payments />} />
           <Route path="/settings" element={<div>Settings</div>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Route>
+      <Route path="/pay/:orderId" element={<Pay />} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useCreateInboundOrder } from "@/hooks/use-inbound-orders";
+import { useCreateOutboundOrder } from "@/hooks/use-outbound-orders";
 import { useWarehouses } from "@/hooks/use-warehouses";
 import { useProducts } from "@/hooks/use-products";
-import { LuPlus, LuTrash2 } from "react-icons/lu";
 import { WarehouseCombobox } from "@/components/inventory/warehouse/WarehouseCombobox";
+import { LuPlus, LuTrash2 } from "react-icons/lu";
 
 interface Props {
   onClose: () => void;
 }
 
-export function CreateInboundOrderForm({ onClose }: Props) {
-  const [supplier, setSupplier] = useState("");
+export function CreateOutboundOrderForm({ onClose }: Props) {
+  const [customer, setCustomer] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [items, setItems] = useState([
-    { product_id: "", expected_quantity: 1, unit_cost: 0 },
+    { product_id: "", quantity: 1, unit_cost: 0 },
   ]);
 
   const { data: warehousesData } = useWarehouses(1, 100);
@@ -23,20 +23,22 @@ export function CreateInboundOrderForm({ onClose }: Props) {
   const warehouses = warehousesData?.items ?? [];
   const products = productsData?.items ?? [];
 
-  const createOrder = useCreateInboundOrder();
+  const createOrder = useCreateOutboundOrder();
 
   const addItem = () =>
-    setItems([
-      ...items,
-      { product_id: "", expected_quantity: 1, unit_cost: 0 },
-    ]);
+    setItems([...items, { product_id: "", quantity: 1, unit_cost: 0 }]);
   const removeItem = (i: number) =>
     setItems(items.filter((_, idx) => idx !== i));
+  const updateItem = (i: number, field: string, value: string | number) => {
+    const updated = [...items];
+    updated[i] = { ...updated[i], [field]: value };
+    setItems(updated);
+  };
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     createOrder.mutate(
-      { warehouse_id: warehouseId, supplier_name: supplier, items },
+      { warehouse_id: warehouseId, customer_name: customer, items },
       { onSuccess: onClose },
     );
   };
@@ -44,13 +46,15 @@ export function CreateInboundOrderForm({ onClose }: Props) {
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-2">
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Supplier Name</label>
+        <label className="text-sm font-medium">Customer Name</label>
         <Input
-          value={supplier}
-          onChange={(e) => setSupplier(e.target.value)}
+          value={customer}
+          onChange={(e) => setCustomer(e.target.value)}
           required
+          placeholder="Acme Co."
         />
       </div>
+
       <div className="grid gap-2">
         <label className="text-sm font-medium">Warehouse</label>
         <WarehouseCombobox
@@ -70,16 +74,13 @@ export function CreateInboundOrderForm({ onClose }: Props) {
         {items.map((item, i) => (
           <div
             key={i}
-            className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border bg-white p-3"
+            className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border p-3 bg-white"
           >
             <select
               className="h-9 rounded-md border px-3 text-sm bg-background w-full"
               value={item.product_id}
-              onChange={(e) => {
-                const updated = [...items];
-                updated[i].product_id = e.target.value;
-                setItems(updated);
-              }}
+              onChange={(e) => updateItem(i, "product_id", e.target.value)}
+              required
             >
               <option value="">Select product</option>
               {products.map((p) => (
@@ -89,18 +90,29 @@ export function CreateInboundOrderForm({ onClose }: Props) {
               ))}
             </select>
 
-            <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
+            <div className="grid grid-cols-[1fr,1fr,auto] gap-2 items-center">
               <Input
                 type="number"
                 min={1}
                 placeholder="Qty"
-                value={item.expected_quantity}
-                onChange={(e) => {
-                  const updated = [...items];
-                  updated[i].expected_quantity = parseInt(e.target.value);
-                  setItems(updated);
-                }}
+                value={item.quantity}
+                onChange={(e) =>
+                  updateItem(i, "quantity", parseInt(e.target.value) || 0)
+                }
                 className="w-full min-w-[60px]"
+                required
+              />
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Cost"
+                value={item.unit_cost || ""}
+                onChange={(e) =>
+                  updateItem(i, "unit_cost", parseFloat(e.target.value) || 0)
+                }
+                className="w-full min-w-[80px]"
+                required
               />
               <Button
                 type="button"
@@ -114,14 +126,17 @@ export function CreateInboundOrderForm({ onClose }: Props) {
               </Button>
             </div>
           </div>
-        ))}
+        ))}{" "}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={createOrder.isPending || !warehouseId}>
+        <Button
+          type="submit"
+          disabled={createOrder.isPending || !warehouseId || !customer}
+        >
           {createOrder.isPending ? "Creating..." : "Create Order"}
         </Button>
       </div>

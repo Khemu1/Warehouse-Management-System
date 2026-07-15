@@ -20,7 +20,7 @@ export class OutboundOrder {
   confirmed_by: string;
 
   @Column('uuid', { nullable: true })
-  cancalled_by: string;
+  cancelled_by: string;
 
   @Column('varchar')
   customer_name: string;
