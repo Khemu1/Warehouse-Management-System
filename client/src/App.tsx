@@ -6,6 +6,7 @@ import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import Warehouses from "./pages/Warehouses";
 import StockLevels from "./pages/StockLevels";
+import InboundOrders from "./pages/InboundOrders";
 // import Warehouses from "@/pages/Warehouses";
 // import StockLevels from "@/pages/StockLevels";
 
@@ -22,7 +23,7 @@ export default function App() {
           <Route path="/inventory/products" element={<Products />} />
           <Route path="/inventory/warehouses" element={<Warehouses />} />
           <Route path="/inventory/stock" element={<StockLevels />} />
-          <Route path="/orders/inbound" element={<div>Inbound Orders</div>} />
+          <Route path="/orders/inbound" element={<InboundOrders />} />
           <Route path="/orders/outbound" element={<div>Outbound Orders</div>} />
           <Route path="/payments" element={<div>Payments</div>} />
           <Route path="/settings" element={<div>Settings</div>} />

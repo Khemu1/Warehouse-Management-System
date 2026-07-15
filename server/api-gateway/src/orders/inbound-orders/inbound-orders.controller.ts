@@ -38,7 +38,7 @@ export class InboundOrdersController {
     return this.ordersClient.send('receiveInboundOrder', {
       ...dto,
       ...user,
-      id,
+      order_id: id,
     });
   }
 
@@ -58,12 +58,17 @@ export class InboundOrdersController {
   @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @Get()
   findAll(
-    @Query('warehouse_id', new ParseUUIDPipe({ optional: true }))
-    warehouse_id: string | undefined,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
     @User() user: JwtPayload,
+    @Query('warehouse_id') warehouse_id?: string,
   ) {
     return this.ordersClient.send('findAllInboundOrders', {
-      warehouse_id,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+      warehouse_id: warehouse_id || undefined, // Convert empty string to undefined
       ...user,
     });
   }

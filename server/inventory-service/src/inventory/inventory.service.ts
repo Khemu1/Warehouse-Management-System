@@ -343,14 +343,21 @@ export class InventoryService {
     quantity: number;
     idempotency_key: string;
   }) {
-    const item = await this.repo.findOne({
+    let item = await this.repo.findOne({
       where: {
         warehouse_id: data.warehouse_id,
         product_id: data.product_id,
       },
     });
     if (!item) {
-      throw new NotFoundException("Item wasn't found to be added");
+      // First time this product enters this warehouse — create the inventory row
+      item = this.repo.create({
+        warehouse_id: data.warehouse_id,
+        product_id: data.product_id,
+        quantity: 0,
+        reserved_quantity: 0,
+      });
+      await this.repo.save(item);
     }
 
     // save record the movement

@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  CreateInboundOrderDto,
-  ReceiveInboundOrderDto,
+  CreateInboundOrderMessageDto,
+  ReceiveInboundOrderMessageDto,
 } from '@shared/dtos/inbound-order.dtos';
 import { InboundOrder } from './entities/inbound-order.entity';
 import { InboundOrderItem } from './entities/inbound-order-item.entity';
@@ -17,6 +17,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import type { ISafeClient } from '@shared/types';
 import { InboundOrderFailure } from './entities/inbound-order-failure.entity';
+import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class InboundOrdersService {
@@ -28,12 +29,11 @@ export class InboundOrdersService {
     private inboundOrderRepo: Repository<InboundOrder>,
     @InjectRepository(InboundOrderItem)
     private inboundOrderItemRepo: Repository<InboundOrderItem>,
-    @InjectRepository(InboundOrderItem)
+    @InjectRepository(InboundOrderFailure)
     private failureRepo: Repository<InboundOrderFailure>,
   ) {}
 
-  async create(dto: CreateInboundOrderDto) {
-    console.log('before doesWarehouseExist');
+  async create(dto: CreateInboundOrderMessageDto) {
     const warehouseExists = await this.inventoryClient.send(
       'doesWarehouseExist',
       {
@@ -46,7 +46,6 @@ export class InboundOrdersService {
     }
 
     const productIds = dto.items.map((item) => item.product_id);
-    console.log('before doesProductsExist ', productIds);
 
     const { allExist, missingIds } = await this.inventoryClient.send(
       'doesProductsExist',
@@ -80,13 +79,38 @@ export class InboundOrdersService {
     });
   }
 
-  findAll(warehouse_id?: string) {
-    return this.inboundOrderRepo.find({
-      where: warehouse_id ? { warehouse_id } : {},
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    warehouse_id?: string,
+  ): Promise<Pagination<InboundOrder>> {
+    const queryBuilder = this.inboundOrderRepo
+      .createQueryBuilder('order')
+      .select([
+        'order.id',
+        'order.warehouse_id',
+        'order.supplier_name',
+        'order.status',
+        'order.total_amount',
+        'order.created_at',
+      ])
+      .loadRelationCountAndMap('order.item_count', 'order.inbound_items')
+      .orderBy('order.created_at', 'DESC');
 
-      relations: { inbound_items: true },
-      order: { created_at: 'DESC' },
-    });
+    if (warehouse_id) {
+      queryBuilder.andWhere('order.warehouse_id = :warehouse_id', {
+        warehouse_id,
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('order.supplier_name ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    return paginate<InboundOrder>(queryBuilder, { page, limit });
   }
 
   async findOne(id: string) {
@@ -95,10 +119,37 @@ export class InboundOrdersService {
       relations: { inbound_items: true },
     });
     if (!order) throw new NotFoundException(`Inbound order ${id} not found`);
-    return order;
-  }
 
-  async receive(dto: ReceiveInboundOrderDto) {
+    const warehouse = await this.inventoryClient.send('findOneWarehouse', {
+      id: order.warehouse_id,
+    });
+
+    const productIds = order.inbound_items.map((item) => item.product_id);
+    const products = await this.inventoryClient.send(
+      'findProductsByIds',
+      productIds,
+    );
+    const productMap = new Map(products.map((p: any) => [p.id, p]));
+
+    let failures: any[] = [];
+    if (order.status === InBoundOrderStatus.NEEDS_ATTENTION) {
+      failures = await this.failureRepo.find({
+        where: { order_id: id, resolved: false },
+        order: { created_at: 'DESC' },
+      });
+    }
+
+    return {
+      ...order,
+      warehouse_name: warehouse?.name ?? 'Unknown',
+      failures,
+      inbound_items: order.inbound_items.map((item) => ({
+        ...item,
+        product: productMap.get(item.product_id) || null,
+      })),
+    };
+  }
+  async receive(dto: ReceiveInboundOrderMessageDto) {
     const order = await this.inboundOrderRepo.findOne({
       where: {
         id: dto.order_id,
@@ -156,6 +207,26 @@ export class InboundOrdersService {
     }
     order.status = InBoundOrderStatus.CANCELLED;
     await this.inboundOrderRepo.save(order);
+  }
+
+  async checkAndComplete(order_id: string) {
+    const order = await this.inboundOrderRepo.findOne({
+      where: { id: order_id },
+      relations: { inbound_items: true },
+    });
+
+    if (!order || order.status !== InBoundOrderStatus.RECEIVING) return;
+
+    const allReceived = order.inbound_items.every(
+      (item) => item.received_quantity >= item.expected_quantity,
+    );
+
+    if (allReceived) {
+      await this.inboundOrderRepo.update(
+        { id: order_id },
+        { status: InBoundOrderStatus.RECEIVED },
+      );
+    }
   }
 
   async markNeedsAttention(data: {

@@ -6,7 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './products.entity';
 import { In, Repository } from 'typeorm';
-import { CreateProductDto, UpdateProductMessageDto } from '@shared/dtos/products.dto';
+import {
+  CreateProductDto,
+  UpdateProductMessageDto,
+} from '@shared/dtos/products.dto';
 import { paginate, Pagination } from 'nestjs-typeorm-paginate';
 
 @Injectable()
@@ -120,5 +123,18 @@ export class ProductsService {
     queryBuilder.orderBy('product.created_at', 'DESC');
 
     return paginate<Product>(queryBuilder, { page, limit });
+  }
+
+  async findByIds(ids: string[]) {
+    return this.repo.find({
+      where: { id: In(ids) },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        unit_price: true,
+        low_stock_threshold: true,
+      },
+    });
   }
 }

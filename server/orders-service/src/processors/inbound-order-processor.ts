@@ -62,16 +62,6 @@ export class ReceiveOrderProcessor extends WorkerHost {
       await this.itemRepo.save(toSave);
     }
 
-    await this.orderRepo.update(
-      { id: order_id },
-      {
-        status: allFullyReceived
-          ? InBoundOrderStatus.RECEIVED
-          : InBoundOrderStatus.PARTIALLY_RECEIVED,
-        total_amount: totalAmount,
-      },
-    );
-
     // batch the stock-update job enqueueing
     for (const batch of chunk(items, BATCH_SIZE)) {
       await this.stockQueue.addBulk(

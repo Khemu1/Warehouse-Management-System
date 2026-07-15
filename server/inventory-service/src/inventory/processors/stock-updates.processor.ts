@@ -108,6 +108,13 @@ export class StockUpdatesProcessor extends WorkerHost {
     const { order_id, item_id } = job.data;
 
     switch (job.name) {
+      case 'add_stock':
+        await this.ordersClient.emit('inboundItemStockAdded', {
+          order_id,
+          item_id,
+        });
+        break;
+
       case 'reserve_stock':
         // await this.ordersClient.emit('outboundItemStockReserved', {
         //   order_id,

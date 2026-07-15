@@ -42,11 +42,11 @@
 
 **Endpoints:** `GET/POST /orders/inbound`
 
-- [ ] Create inbound order form
-- [ ] Select warehouse, add products + quantities
-- [ ] Status: pending → received
-- [ ] Table with all inbound orders
-- [ ] View order details
+- [x] Create inbound order form
+- [x] Select warehouse, add products + quantities
+- [x] Status: pending → received
+- [x] Table with all inbound orders
+- [x] View order details
 
 ### 5. Outbound Orders Page — `/orders/outbound`
 

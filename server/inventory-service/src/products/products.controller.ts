@@ -24,6 +24,11 @@ export class ProductsController {
     return await this.productsService.findOne(data.id);
   }
 
+  @MessagePattern('findProductsByIds')
+  async findByIds(@Payload() ids: string[]) {
+    return await this.productsService.findByIds(ids);
+  }
+
   @MessagePattern('deleteProduct')
   async deleteProduct(@Payload() data: { id: string }) {
     await this.productsService.deleteProduct(data.id);

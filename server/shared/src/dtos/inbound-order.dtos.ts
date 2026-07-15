@@ -18,10 +18,12 @@ export class CreateInboundOrderItemDto {
   @IsInt()
   @Min(1)
   expected_quantity: number;
+
   @IsNumber()
   @Min(0)
   unit_cost: number;
 }
+
 export class ReceiveInboundItemDto {
   @IsUUID()
   item_id: string;
@@ -31,7 +33,8 @@ export class ReceiveInboundItemDto {
   received_quantity: number;
 }
 
-export class CreateInboundOrderDto extends AuthenticatedDto {
+// HTTP — what the client sends (no user_id, it comes from JWT)
+export class CreateInboundOrderDto {
   @IsUUID()
   warehouse_id: string;
 
@@ -45,7 +48,32 @@ export class CreateInboundOrderDto extends AuthenticatedDto {
   items: CreateInboundOrderItemDto[];
 }
 
-export class ReceiveInboundOrderDto extends AuthenticatedDto {
+// HTTP — what the client sends for receive (no order_id, it's in the URL)
+export class ReceiveInboundOrderDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ReceiveInboundItemDto)
+  items: ReceiveInboundItemDto[];
+}
+
+// Internal message — gateway → orders service for create
+export class CreateInboundOrderMessageDto extends AuthenticatedDto {
+  @IsUUID()
+  warehouse_id: string;
+
+  @IsString()
+  supplier_name: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateInboundOrderItemDto)
+  items: CreateInboundOrderItemDto[];
+}
+
+// Internal message — gateway → orders service for receive
+export class ReceiveInboundOrderMessageDto extends AuthenticatedDto {
   @IsUUID()
   order_id: string;
 
@@ -55,5 +83,3 @@ export class ReceiveInboundOrderDto extends AuthenticatedDto {
   @Type(() => ReceiveInboundItemDto)
   items: ReceiveInboundItemDto[];
 }
-
-export class UpdateInboundOrderDto extends AuthenticatedDto {}
