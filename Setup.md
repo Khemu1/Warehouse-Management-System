@@ -58,7 +58,7 @@ Each service has its own env file, loaded via `env_file:` in `docker-compose.yml
 | auth-service      | `auth-service/.env.development`      |
 | inventory-service | `inventory-service/.env.development` |
 | orders-service    | `orders-service/.env.development`    |
-| payment-service   | `payment-service/.env.development`    |
+| payment-service   | `payment-service/.env.development`   |
 | migrator          | `shared/.env.production`             |
 
 Some values (`DATABASE_URL`, `RABBITMQ_URL`, `DATABASE_HOST`, `REDIS_HOST`) are also set directly in `docker-compose.yml` under `environment:` for each service — these override anything conflicting in the env files, since Compose applies `environment:` after `env_file:`.
@@ -72,18 +72,17 @@ Some values (`DATABASE_URL`, `RABBITMQ_URL`, `DATABASE_HOST`, `REDIS_HOST`) are 
 | postgres          | wms-postgres          | 5435                         | 5432           | avoids clashing with a native/other Postgres on 5432 |
 | redis             | wms-redis             | 6380                         | 6379           | avoids clashing with a native/other Redis on 6379    |
 | rabbitmq          | wms-rabbitmq          | 5673 (amqp), 15673 (mgmt UI) | 5672, 15672    | mgmt UI: http://localhost:15673                      |
-| api-gateway       | wms-api-gateway       | 3001                        | 3000           | public REST entry point                              |
+| api-gateway       | wms-api-gateway       | 3001                         | 3000           | public REST entry point                              |
 | auth-service      | wms-auth-service      |                              |                | published for direct debugging/inspection            |
 | inventory-service | wms-inventory-service |                              |                | published for direct debugging/inspection            |
 | orders-service    | wms-orders-service    |                              |                | published for direct debugging/inspection            |
-| orders-service    | wms-orders-service    |                              |                | published for direct debugging/inspection            |
-
+| payment-service   | wms-orders-service    |                              |                | published for direct debugging/inspection            |
 
 > **Note:** auth/inventory/orders services communicate with the gateway over RabbitMQ, not HTTP — publishing their ports is for local debugging/inspection convenience only, not because anything calls them over HTTP directly. If your `docker-compose.yml` doesn't yet have `ports:` entries for these three services, add:
 >
 > ```yaml
 > ports:
->   - "3001:3000" # (3002/3003 for the other two, respectively)
+>   - "3001:3001" # (3002/3003 for the other two, respectively)
 > ```
 
 ## 6. Building & Running
