@@ -5,17 +5,17 @@ import {
   ExecutionContext,
   HttpException,
   Logger,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { RateLimiterRedis } from 'rate-limiter-flexible';
-import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { RateLimiterRedis } from "rate-limiter-flexible";
+import Redis from "ioredis";
+import { ConfigService } from "@nestjs/config";
 import {
   RATE_LIMIT_KEY,
   RateLimitOptions,
-} from '@/decorator/rate-limit.decorator';
+} from "../decorators/rate-limit.decorator";
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
+type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
 
 @Injectable()
 export class RateLimiterGuard implements CanActivate {
@@ -28,9 +28,9 @@ export class RateLimiterGuard implements CanActivate {
     private readonly configService: ConfigService,
   ) {
     this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', '127.0.0.1'),
-      port: this.configService.get('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
+      host: this.configService.get("REDIS_HOST", "127.0.0.1"),
+      port: this.configService.get("REDIS_PORT", 6379),
+      password: this.configService.get("REDIS_PASSWORD"),
     });
   }
 
@@ -39,8 +39,6 @@ export class RateLimiterGuard implements CanActivate {
     const response = context.switchToHttp().getResponse();
     const handler = context.getHandler();
     const controller = context.getClass();
-
-    console.log('can acctive ');
 
     const methodDecoratorConfig = this.reflector.get<RateLimitOptions>(
       RATE_LIMIT_KEY,
@@ -70,7 +68,7 @@ export class RateLimiterGuard implements CanActivate {
 
     const { points = 10, duration = 60, message } = methodConfig;
 
-    const limiterKey = `${request.route?.path || 'global'}_${method}`;
+    const limiterKey = `${request.route?.path || "global"}_${method}`;
     let limiter = this.limiters.get(limiterKey);
 
     if (!limiter) {
@@ -86,19 +84,19 @@ export class RateLimiterGuard implements CanActivate {
     }
 
     try {
-      const result = await limiter.consume(request.ip ?? 'unknown');
+      const result = await limiter.consume(request.ip ?? "unknown");
 
-      response.setHeader('X-RateLimit-Limit', limiter.points);
-      response.setHeader('X-RateLimit-Remaining', result.remainingPoints);
+      response.setHeader("X-RateLimit-Limit", limiter.points);
+      response.setHeader("X-RateLimit-Remaining", result.remainingPoints);
       response.setHeader(
-        'X-RateLimit-Reset',
+        "X-RateLimit-Reset",
         new Date(Date.now() + result.msBeforeNext).toISOString(),
       );
 
       return true;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error('Rate limiter Redis error:', error.message);
+        this.logger.error("Rate limiter Redis error:", error.message);
         return true;
       }
 
@@ -111,14 +109,14 @@ export class RateLimiterGuard implements CanActivate {
         (rateLimitError.msBeforeNext ?? 1000) / 1000,
       );
 
-      response.setHeader('Retry-After', retryAfterSeconds.toString());
-      response.setHeader('X-RateLimit-Limit', limiter.points);
+      response.setHeader("Retry-After", retryAfterSeconds.toString());
+      response.setHeader("X-RateLimit-Limit", limiter.points);
       response.setHeader(
-        'X-RateLimit-Remaining',
+        "X-RateLimit-Remaining",
         rateLimitError.remainingPoints ?? 0,
       );
       response.setHeader(
-        'X-RateLimit-Reset',
+        "X-RateLimit-Reset",
         new Date(Date.now() + (rateLimitError.msBeforeNext ?? 0)).toISOString(),
       );
 
@@ -127,7 +125,7 @@ export class RateLimiterGuard implements CanActivate {
           statusCode: 429,
           message:
             message || `Too many ${method} requests. Please try again later.`,
-          error: 'Too Many Requests',
+          error: "Too Many Requests",
           data: { route: request.url },
         },
         429,

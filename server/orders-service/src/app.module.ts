@@ -10,6 +10,7 @@ import { InboundOrdersModule } from './inbound-orders/inbound-orders.module';
 import { OutboundOrdersModule } from './outbound-orders/outbound-orders.module';
 import { AppClientsModule } from './clients/clients.module';
 import { QueueModule } from '@shared/queues/queue.module';
+import { OrdersStatsModule } from './order-stats/inbound-orders.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { QueueModule } from '@shared/queues/queue.module';
     DatabaseModule,
     InboundOrdersModule,
     OutboundOrdersModule,
+    OrdersStatsModule,
   ],
   providers: [
     {

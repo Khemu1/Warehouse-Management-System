@@ -1,13 +1,21 @@
-import { useState, type SyntheticEvent } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
 import type { Warehouse } from "@/types/inventory/warehouses";
+import {
+  type WarehouseFormData,
+  warehouseSchema,
+} from "@/validations/warehouse";
+import { getFieldError } from "@/utils/form-errors";
 
 interface WarehouseFormProps {
   warehouse?: Warehouse | null;
   onSave: (warehouse: Partial<Warehouse>) => void;
   isLoading: boolean;
   onClose: () => void;
+  serverErrors?: Record<string, string>;
 }
 
 export function WarehouseForm({
@@ -15,48 +23,55 @@ export function WarehouseForm({
   onSave,
   isLoading,
   onClose,
+  serverErrors,
 }: WarehouseFormProps) {
-  const [form, setForm] = useState({
-    name: warehouse?.name ?? "",
-    location: warehouse?.location ?? "",
-    capacity: warehouse?.capacity ?? 0,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<WarehouseFormData>({
+    resolver: zodResolver(warehouseSchema),
+    defaultValues: {
+      name: warehouse?.name ?? "",
+      location: warehouse?.location ?? "",
+      capacity: warehouse?.capacity ?? 0,
+    },
   });
 
-  const handleSubmit = (e: SyntheticEvent) => {
-    e.preventDefault();
-    onSave(warehouse ? { ...form, id: warehouse.id } : form);
+  const onSubmit: SubmitHandler<WarehouseFormData> = (data) => {
+    onSave(warehouse ? { ...data, id: warehouse.id } : data);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-2">
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Name</label>
-        <Input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Location</label>
-        <Input
-          value={form.location}
-          onChange={(e) => setForm({ ...form, location: e.target.value })}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Capacity</label>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
+      <FormField
+        label="Name"
+        error={getFieldError("name", errors, serverErrors)}
+        required
+      >
+        <Input {...register("name")} />
+      </FormField>
+
+      <FormField
+        label="Location"
+        error={getFieldError("location", errors, serverErrors)}
+        required
+      >
+        <Input {...register("location")} />
+      </FormField>
+
+      <FormField
+        label="Capacity"
+        error={getFieldError("capacity", errors, serverErrors)}
+        required
+      >
         <Input
           type="number"
-          min={0}
-          value={form.capacity}
-          onChange={(e) =>
-            setForm({ ...form, capacity: parseInt(e.target.value) })
-          }
-          required
+          min={1}
+          {...register("capacity", { valueAsNumber: true })}
         />
-      </div>
+      </FormField>
+
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel

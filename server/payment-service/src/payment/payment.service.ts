@@ -113,4 +113,15 @@ export class PaymentService {
       },
     });
   }
+
+  async getStats() {
+    const result = await this.repo
+      .createQueryBuilder('payment')
+      .select('COALESCE(SUM(payment.total_amount), 0)', 'total')
+      .where('payment.status = :status', { status: PaymentStatus.CONFIRMED })
+      .andWhere('payment.created_at >= CURRENT_DATE')
+      .getRawOne();
+
+    return { revenueToday: parseFloat(result?.total || '0') };
+  }
 }

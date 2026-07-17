@@ -14,6 +14,10 @@
     "emitDeclarationOnly": false,
     "sourceMap": false
   },
-  "include": ["src/**/*", "../shared/src/safe-client-proxy.ts"],
+  "include": [
+    "src/**/*",
+    "../shared/src/safe-client-proxy.ts",
+    "../shared/src/guards/rate-limiter.guard.ts"
+, "../shared/src/decorators/rate-limit.decorator.ts"  ],
   "exclude": ["node_modules", "dist", "test"]
 }

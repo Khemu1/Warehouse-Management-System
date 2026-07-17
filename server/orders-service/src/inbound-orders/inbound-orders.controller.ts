@@ -70,6 +70,8 @@ export class InboundOrdersController {
     return await this.inboundOrdersService.markNeedsAttention(data);
   }
 
+  
+
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {
     return {

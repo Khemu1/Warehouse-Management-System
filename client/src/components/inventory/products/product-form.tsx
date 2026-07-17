@@ -1,13 +1,18 @@
-import { useState, type SyntheticEvent } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
 import type { Product } from "@/types/inventory/products";
+import { type ProductFormData, productSchema } from "@/validations/product";
+import { getFieldError } from "@/utils/form-errors";
 
 interface ProductFormProps {
   product?: Product | null;
   onSave: (product: Partial<Product>) => void;
   isLoading: boolean;
   onClose: () => void;
+  serverErrors?: Record<string, string>;
 }
 
 export function ProductForm({
@@ -15,72 +20,77 @@ export function ProductForm({
   onSave,
   isLoading,
   onClose,
+  serverErrors,
 }: ProductFormProps) {
-  const [form, setForm] = useState({
-    name: product?.name ?? "",
-    sku: product?.sku ?? "",
-    description: product?.description ?? "",
-    unit_price: product?.unit_price ?? 0,
-    low_stock_threshold: product?.low_stock_threshold ?? 5,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: product?.name ?? "",
+      sku: product?.sku ?? "",
+      description: product?.description ?? "",
+      unit_price: product?.unit_price ?? 0,
+      low_stock_threshold: product?.low_stock_threshold ?? 5,
+    },
   });
 
-  const handleSubmit = (e: SyntheticEvent) => {
-    e.preventDefault();
-    onSave(product ? { ...form, id: product.id } : form);
+  const onSubmit: SubmitHandler<ProductFormData> = (data) => {
+    onSave(product ? { ...data, id: product.id } : data);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-2">
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Name</label>
-        <Input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">SKU</label>
-        <Input
-          value={form.sku}
-          onChange={(e) => setForm({ ...form, sku: e.target.value })}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Description</label>
-        <Input
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
+      <FormField
+        label="Name"
+        error={getFieldError("name", errors, serverErrors)}
+        required
+      >
+        <Input {...register("name")} />
+      </FormField>
+
+      <FormField
+        label="SKU"
+        error={getFieldError("sku", errors, serverErrors)}
+        required
+      >
+        <Input {...register("sku")} />
+      </FormField>
+
+      <FormField
+        label="Description"
+        error={getFieldError("description", errors, serverErrors)}
+      >
+        <Input {...register("description")} />
+      </FormField>
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Unit Price</label>
+        <FormField
+          label="Unit Price"
+          error={getFieldError("unit_price", errors, serverErrors)}
+          required
+        >
           <Input
             type="number"
             step="0.01"
-            value={form.unit_price}
-            onChange={(e) =>
-              setForm({ ...form, unit_price: parseFloat(e.target.value) })
-            }
-            required
+            {...register("unit_price", { valueAsNumber: true })}
           />
-        </div>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Low Stock Threshold</label>
+        </FormField>
+
+        <FormField
+          label="Low Stock Threshold"
+          error={getFieldError("low_stock_threshold", errors, serverErrors)}
+          required
+        >
           <Input
             type="number"
-            value={form.low_stock_threshold}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                low_stock_threshold: parseInt(e.target.value),
-              })
-            }
+            {...register("low_stock_threshold", { valueAsNumber: true })}
           />
-        </div>
+        </FormField>
       </div>
+
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel

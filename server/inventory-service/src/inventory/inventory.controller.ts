@@ -36,6 +36,12 @@ export class InventoryController {
       data.warehouse_id,
     );
   }
+
+  @MessagePattern('getDashboardStats')
+  async getDashboardStats() {
+    return this.inventoryService.getDashboardStats();
+  }
+
   @MessagePattern('didItemMove')
   async didItemMove(@Payload() data: { idempotency_key: string }) {
     return this.inventoryService.didItemMove(data.idempotency_key);

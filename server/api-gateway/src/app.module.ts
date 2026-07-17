@@ -12,7 +12,8 @@ import { InboundOrdersModule } from './orders/inbound-orders/inbound-orders.modu
 import { HealthModule } from './health/health.module';
 import { OutboundOrdersModule } from './orders/outbound-orders/outbound-orders.module';
 import { PaymentsModule } from './payments/payments.module';
-import { RateLimiterGuard } from './guards/rate-limiter.guard';
+import { RateLimiterGuard } from '../../shared/src/guards/rate-limiter.guard';
+import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +30,7 @@ import { RateLimiterGuard } from './guards/rate-limiter.guard';
     InboundOrdersModule,
     OutboundOrdersModule,
     PaymentsModule,
+    DashboardModule,
   ],
   providers: [
     {

@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormField } from "@/components/ui/form-field";
+import { getFieldError } from "@/utils/form-errors";
 import {
   useReceiveInboundOrder,
   useInboundOrderDetails,
 } from "@/hooks/use-inbound-orders";
+import {
+  type ReceiveInboundFormData,
+  receiveInboundSchema,
+} from "@/validations/receive-inbound";
 import type { InboundOrder } from "@/types/orders/inbound";
 
 interface Props {
@@ -15,29 +21,42 @@ interface Props {
 }
 
 export function ReceiveInboundOrderForm({ order, onClose }: Props) {
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const receiveOrder = useReceiveInboundOrder();
   const { data: fullOrder, isLoading } = useInboundOrderDetails(order?.id);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ReceiveInboundFormData>({
+    resolver: zodResolver(receiveInboundSchema),
+    defaultValues: {
+      order_id: order?.id ?? "",
+      items: [],
+    },
+    values: {
+      order_id: order?.id ?? "",
+      items:
+        fullOrder?.inbound_items?.map((item) => ({
+          item_id: item.id,
+          received_quantity: item.expected_quantity,
+        })) ?? [],
+    },
+  });
+
+  const onSubmit: SubmitHandler<ReceiveInboundFormData> = (data) => {
+    receiveOrder.mutate(
+      { id: order!.id, items: data.items },
+      { onSuccess: onClose },
+    );
+  };
 
   if (!order) return null;
 
   const items = fullOrder?.inbound_items ?? [];
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    const receiveItems = items.map((item) => ({
-      item_id: item.id,
-      received_quantity: quantities[item.id] ?? item.expected_quantity,
-    }));
-    receiveOrder.mutate(
-      { id: order.id, items: receiveItems },
-      { onSuccess: onClose },
-    );
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-2">
-      {/* Order Summary */}
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
       <div className="flex items-center gap-4 text-sm">
         <div>
           <span className="text-muted-foreground">Supplier:</span>{" "}
@@ -52,7 +71,7 @@ export function ReceiveInboundOrderForm({ order, onClose }: Props) {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Confirm received quantities. Defaults to expected quantity.
+        Confirm received quantities.
       </p>
 
       {isLoading ? (
@@ -61,7 +80,7 @@ export function ReceiveInboundOrderForm({ order, onClose }: Props) {
         ))
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
+          {items.map((item, i) => (
             <div
               key={item.id}
               className="flex items-center gap-3 rounded-md border p-3"
@@ -81,22 +100,29 @@ export function ReceiveInboundOrderForm({ order, onClose }: Props) {
                   Expected:{" "}
                   <span className="font-medium">{item.expected_quantity}</span>
                 </span>
-                <Input
-                  type="number"
-                  min={0}
-                  defaultValue={item.expected_quantity}
-                  onChange={(e) =>
-                    setQuantities({
-                      ...quantities,
-                      [item.id]: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="w-20 h-8 text-sm"
-                />
+                <FormField
+                  label=""
+                  error={getFieldError(
+                    `items.${i}.received_quantity` as any,
+                    errors,
+                  )}
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    {...register(`items.${i}.received_quantity`, {
+                      valueAsNumber: true,
+                    })}
+                    className="w-20 h-8 text-sm"
+                  />
+                </FormField>
               </div>
             </div>
           ))}
         </div>
+      )}
+      {errors.items && (
+        <p className="text-xs text-destructive">{errors.items.message}</p>
       )}
 
       <div className="flex justify-end gap-3 pt-4">

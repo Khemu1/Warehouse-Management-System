@@ -1,85 +1,95 @@
-import { useState } from "react";
+import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
 import { useCreateInboundOrder } from "@/hooks/use-inbound-orders";
 import { useWarehouses } from "@/hooks/use-warehouses";
 import { useProducts } from "@/hooks/use-products";
-import { LuPlus, LuTrash2 } from "react-icons/lu";
 import { WarehouseCombobox } from "@/components/inventory/warehouse/WarehouseCombobox";
+import {
+  type InboundOrderFormData,
+  inboundOrderSchema,
+} from "@/validations/inbound-order";
+import { LuPlus, LuTrash2 } from "react-icons/lu";
+import { getFieldError } from "@/utils/form-errors";
 
 interface Props {
   onClose: () => void;
 }
 
 export function CreateInboundOrderForm({ onClose }: Props) {
-  const [supplier, setSupplier] = useState("");
-  const [warehouseId, setWarehouseId] = useState("");
-  const [items, setItems] = useState([
-    { product_id: "", expected_quantity: 1, unit_cost: 0 },
-  ]);
-
   const { data: warehousesData } = useWarehouses(1, 100);
   const { data: productsData } = useProducts(1, 100);
   const warehouses = warehousesData?.items ?? [];
   const products = productsData?.items ?? [];
-
   const createOrder = useCreateInboundOrder();
 
-  const addItem = () =>
-    setItems([
-      ...items,
-      { product_id: "", expected_quantity: 1, unit_cost: 0 },
-    ]);
-  const removeItem = (i: number) =>
-    setItems(items.filter((_, idx) => idx !== i));
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<InboundOrderFormData>({
+    resolver: zodResolver(inboundOrderSchema),
+    defaultValues: {
+      warehouse_id: "",
+      supplier_name: "",
+      items: [{ product_id: "", expected_quantity: 1, unit_cost: 0 }],
+    },
+  });
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    createOrder.mutate(
-      { warehouse_id: warehouseId, supplier_name: supplier, items },
-      { onSuccess: onClose },
-    );
+  const { fields, append, remove } = useFieldArray({ control, name: "items" });
+
+  const onSubmit: SubmitHandler<InboundOrderFormData> = (data) => {
+    createOrder.mutate(data, { onSuccess: onClose });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-2">
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Supplier Name</label>
-        <Input
-          value={supplier}
-          onChange={(e) => setSupplier(e.target.value)}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Warehouse</label>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
+      <FormField
+        label="Supplier Name"
+        error={getFieldError("supplier_name", errors)}
+        required
+      >
+        <Input {...register("supplier_name")} />
+      </FormField>
+
+      <FormField
+        label="Warehouse"
+        error={getFieldError("warehouse_id", errors)}
+        required
+      >
         <WarehouseCombobox
           warehouses={warehouses}
-          value={warehouseId}
-          onChange={setWarehouseId}
+          value={control._formValues.warehouse_id}
+          onChange={(id) => setValue("warehouse_id", id)}
         />
-      </div>
+      </FormField>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium">Items</label>
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              append({ product_id: "", expected_quantity: 1, unit_cost: 0 })
+            }
+          >
             <LuPlus className="mr-1 h-3 w-3" /> Add Item
           </Button>
         </div>
-        {items.map((item, i) => (
+        {fields.map((field, i) => (
           <div
-            key={i}
-            className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border bg-white p-3"
+            key={field.id}
+            className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border p-3"
           >
             <select
               className="h-9 rounded-md border px-3 text-sm bg-background w-full"
-              value={item.product_id}
-              onChange={(e) => {
-                const updated = [...items];
-                updated[i].product_id = e.target.value;
-                setItems(updated);
-              }}
+              {...register(`items.${i}.product_id`)}
             >
               <option value="">Select product</option>
               {products.map((p) => (
@@ -88,40 +98,38 @@ export function CreateInboundOrderForm({ onClose }: Props) {
                 </option>
               ))}
             </select>
-
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <Input
                 type="number"
                 min={1}
                 placeholder="Qty"
-                value={item.expected_quantity}
-                onChange={(e) => {
-                  const updated = [...items];
-                  updated[i].expected_quantity = parseInt(e.target.value);
-                  setItems(updated);
-                }}
+                {...register(`items.${i}.expected_quantity`, {
+                  valueAsNumber: true,
+                })}
                 className="w-full min-w-[60px]"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeItem(i)}
-                disabled={items.length === 1}
-                className="shrink-0"
+                onClick={() => remove(i)}
+                disabled={fields.length === 1}
               >
                 <LuTrash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
         ))}
+        {errors.items && (
+          <p className="text-xs text-destructive">{errors.items.message}</p>
+        )}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={createOrder.isPending || !warehouseId}>
+        <Button type="submit" disabled={createOrder.isPending}>
           {createOrder.isPending ? "Creating..." : "Create Order"}
         </Button>
       </div>

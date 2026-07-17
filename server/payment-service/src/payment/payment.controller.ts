@@ -19,13 +19,18 @@ export class PaymentController {
 
   @MessagePattern('findPaymentForOrder')
   findPaymentForOrder(@Payload() data: { id: string }) {
-    console.log('find payment for order ',data);
+    console.log('find payment for order ', data);
     return this.paymentService.findOneForOrder(data.id);
   }
 
   @MessagePattern('findOnePayment')
   findOne(@Payload() data: { id: string }) {
     return this.paymentService.findOne(data.id);
+  }
+
+  @MessagePattern('getPaymentStats')
+  async getPaymentStats() {
+    return this.paymentService.getStats();
   }
 
   @MessagePattern('health.check')

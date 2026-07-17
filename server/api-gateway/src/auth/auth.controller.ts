@@ -1,5 +1,4 @@
-// api-gateway/src/auth/auth.controller.ts
-import { RateLimit } from '@/decorator/rate-limit.decorator';
+import { RateLimit } from '@shared/decorators/rate-limit.decorator';
 import { Body, Controller, Post } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { CreateAuthDto, LoginAuthDto } from '@shared/dtos/auth.dtos';

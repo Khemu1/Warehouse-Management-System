@@ -12,7 +12,7 @@ import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { type JwtPayload, Roles, type ISafeClient } from '@shared/types';
 import { CreatePaymentDto } from '@shared/dtos/payment.dto';
 import { User } from '@shared/decorators/user.decorator';
-import { RateLimit } from '@/decorator/rate-limit.decorator';
+import { RateLimit } from '@shared/decorators/rate-limit.decorator';
 
 @Controller('payments')
 export class PaymentsController {

@@ -9,11 +9,14 @@ import { CheckStockDto, ReserveStockDto } from '@shared/dtos/inventory.dtos';
 import { Inventory } from './entities/inventory.entity';
 import { StockMovement } from './entities/stock-movement.entity';
 import { paginate, Pagination } from 'nestjs-typeorm-paginate';
+import { Product } from '@/products/products.entity';
 
 @Injectable()
 export class InventoryService {
   constructor(
     @InjectRepository(Inventory) private repo: Repository<Inventory>,
+    @InjectRepository(Product) private productRepo: Repository<Product>,
+
     @InjectRepository(StockMovement)
     private movementRepo: Repository<StockMovement>,
   ) {}
@@ -57,6 +60,29 @@ export class InventoryService {
       .orderBy('product.name', 'ASC');
 
     return paginate<Inventory>(queryBuilder, { page, limit });
+  }
+
+  async getDashboardStats() {
+    const [productCount, lowStockCount, totalStock] = await Promise.all([
+      this.productRepo.count(),
+      this.repo
+        .createQueryBuilder('inventory')
+        .leftJoin('inventory.product', 'product')
+        .where(
+          'inventory.quantity - inventory.reserved_quantity <= product.low_stock_threshold',
+        )
+        .getCount(),
+      this.repo
+        .createQueryBuilder('inventory')
+        .select('SUM(inventory.quantity)', 'total')
+        .getRawOne(),
+    ]);
+
+    return {
+      totalProducts: productCount,
+      lowStockCount,
+      totalStockQuantity: parseInt(totalStock?.total || '0'),
+    };
   }
 
   async check(data: CheckStockDto) {

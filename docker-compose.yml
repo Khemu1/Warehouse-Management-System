@@ -72,7 +72,14 @@ services:
     ports:
       - "3002:3001"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health/live"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost:3001/api/health/live",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -150,6 +157,34 @@ services:
       api-gateway-service:
         condition: service_healthy
       auth-service:
+        condition: service_started
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+      args:
+        SERVICE_NAME: payment-service
+    container_name: wms-payment-service
+    restart: unless-stopped
+    env_file: ./payment-service/.env.development
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://wms:wms123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api-gateway-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      orders-service:
         condition: service_started
 
   migrator:
