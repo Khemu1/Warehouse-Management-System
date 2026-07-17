@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { apiFetch, isAPIError } from "@/services";
 import type { ProductsResponse, Product } from "@/types/inventory/products";
+import { useState } from "react";
 
 // Fetch paginated products
 export function useProducts(
@@ -27,11 +28,14 @@ export function useProduct(id: string) {
   });
 }
 
-// Create product
 export function useCreateProduct() {
   const queryClient = useQueryClient();
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (data: Omit<Product, "id">) =>
       apiFetch<Product>("/products", {
         method: "POST",
@@ -40,24 +44,34 @@ export function useCreateProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product created successfully" });
+      setApiError(null);
     },
     onError: (error) => {
       if (isAPIError(error)) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+        setApiError(error);
+        // Only toast non-validation errors
+        if (!error.errors) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+        }
       }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
-// Update product
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({ id, ...data }: Product) =>
       apiFetch<Product>(`/products/${id}`, {
         method: "PUT",
@@ -66,17 +80,23 @@ export function useUpdateProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product updated successfully" });
+      setApiError(null);
     },
     onError: (error) => {
       if (isAPIError(error)) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+        setApiError(error);
+        if (!error.errors) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+        }
       }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
 // Delete product

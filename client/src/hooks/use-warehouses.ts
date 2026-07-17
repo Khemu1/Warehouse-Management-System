@@ -1,24 +1,13 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import type {
+  Warehouse,
+  WarehousesResponse,
+} from "@/types/inventory/warehouses";
 import { apiFetch, isAPIError } from "@/services";
-import type { Warehouse } from "@/types/inventory/warehouses";
 
-interface WarehousesResponse {
-  items: Warehouse[];
-  meta: {
-    totalItems: number;
-    itemCount: number;
-    itemsPerPage: number;
-    totalPages: number;
-    currentPage: number;
-  };
-}
-
-export function useWarehouses(
-  page: number = 1,
-  limit: number = 10,
-  search: string = "",
-) {
+export function useWarehouses(page = 1, limit = 10, search = "") {
   return useQuery({
     queryKey: ["warehouses", { page, limit, search }],
     queryFn: () =>
@@ -29,70 +18,90 @@ export function useWarehouses(
 }
 
 export function useCreateWarehouse() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const qc = useQueryClient();
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
+
+  const mutation = useMutation({
     mutationFn: (data: Omit<Warehouse, "id">) =>
       apiFetch<Warehouse>("/warehouses", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["warehouses"] });
-      toast({ title: "Warehouse created successfully" });
+      qc.invalidateQueries({ queryKey: ["warehouses"] });
+      toast({ title: "Warehouse created" });
+      setApiError(null);
     },
     onError: (error) => {
       if (isAPIError(error)) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+        setApiError(error);
+        if (!error.errors)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
       }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
 export function useUpdateWarehouse() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const qc = useQueryClient();
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
+
+  const mutation = useMutation({
     mutationFn: ({ id, ...data }: Warehouse) =>
       apiFetch<Warehouse>(`/warehouses/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["warehouses"] });
-      toast({ title: "Warehouse updated successfully" });
+      qc.invalidateQueries({ queryKey: ["warehouses"] });
+      toast({ title: "Warehouse updated" });
+      setApiError(null);
     },
     onError: (error) => {
       if (isAPIError(error)) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+        setApiError(error);
+        if (!error.errors)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
       }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
 export function useDeleteWarehouse() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/warehouses/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["warehouses"] });
-      toast({ title: "Warehouse deleted successfully" });
+      qc.invalidateQueries({ queryKey: ["warehouses"] });
+      toast({ title: "Warehouse deleted" });
     },
     onError: (error) => {
-      if (isAPIError(error)) {
+      if (isAPIError(error))
         toast({
           variant: "destructive",
           title: "Error",
           description: error.message,
         });
-      }
     },
   });
 }

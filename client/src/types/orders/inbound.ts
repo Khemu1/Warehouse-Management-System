@@ -1,5 +1,11 @@
 import type { Pagination } from "..";
 
+export interface CreateInboundOrder {
+  warehouse_id: string;
+  supplier_name: string;
+  items: { product_id: string; expected_quantity: number; unit_cost: number }[];
+}
+
 export interface InboundOrderItem {
   id: string;
   product_id: string;

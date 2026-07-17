@@ -50,7 +50,11 @@ export function CreateInboundOrderForm({ onClose }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
       <FormField
         label="Supplier Name"
-        error={getFieldError("supplier_name", errors)}
+        error={getFieldError(
+          "supplier_name",
+          errors,
+          createOrder.apiError?.errors,
+        )}
         required
       >
         <Input {...register("supplier_name")} />
@@ -58,7 +62,11 @@ export function CreateInboundOrderForm({ onClose }: Props) {
 
       <FormField
         label="Warehouse"
-        error={getFieldError("warehouse_id", errors)}
+        error={getFieldError(
+          "warehouse_id",
+          errors,
+          createOrder.apiError?.errors,
+        )}
         required
       >
         <WarehouseCombobox
@@ -87,27 +95,45 @@ export function CreateInboundOrderForm({ onClose }: Props) {
             key={field.id}
             className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border p-3"
           >
-            <select
-              className="h-9 rounded-md border px-3 text-sm bg-background w-full"
-              {...register(`items.${i}.product_id`)}
+            <FormField
+              label=""
+              error={getFieldError(
+                `items.${i}.product_id` as any,
+                errors,
+                createOrder.apiError?.errors,
+              )}
             >
-              <option value="">Select product</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.sku})
-                </option>
-              ))}
-            </select>
+              <select
+                className="h-9 rounded-md border px-3 text-sm bg-background w-full"
+                {...register(`items.${i}.product_id`)}
+              >
+                <option value="">Select product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+            </FormField>
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
-              <Input
-                type="number"
-                min={1}
-                placeholder="Qty"
-                {...register(`items.${i}.expected_quantity`, {
-                  valueAsNumber: true,
-                })}
-                className="w-full min-w-[60px]"
-              />
+              <FormField
+                label=""
+                error={getFieldError(
+                  `items.${i}.expected_quantity` as any,
+                  errors,
+                  createOrder.apiError?.errors,
+                )}
+              >
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Qty"
+                  {...register(`items.${i}.expected_quantity`, {
+                    valueAsNumber: true,
+                  })}
+                  className="w-full min-w-[60px]"
+                />
+              </FormField>
               <Button
                 type="button"
                 variant="ghost"

@@ -57,7 +57,6 @@ export default function Products() {
           Add Product
         </Button>
       </div>
-
       <div className="relative">
         <LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -70,7 +69,6 @@ export default function Products() {
           className="pl-9 bg-white"
         />
       </div>
-
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
@@ -92,8 +90,6 @@ export default function Products() {
           />
         )}
       </Card>
-
-      {/* Product Form Dialog */}
       <AppDialog
         open={dialog.isOpen("product-form")}
         onClose={() => dialog.close("product-form")}
@@ -108,6 +104,9 @@ export default function Products() {
           onSave={handleSave}
           isLoading={createProduct.isPending || updateProduct.isPending}
           onClose={() => dialog.close("product-form")}
+          serverErrors={
+            updateProduct.apiError?.errors || createProduct.apiError?.errors
+          }
         />
       </AppDialog>
     </div>

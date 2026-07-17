@@ -7,7 +7,7 @@ export interface Warehouse {
   capacity: number;
   manager_id?: string;
 }
-export interface ProductsResponse {
+export interface WarehousesResponse {
   items: Warehouse[];
   meta: Pagination;
 }

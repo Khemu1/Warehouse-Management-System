@@ -1,7 +1,17 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import type { EnrichedOrder, OrdersResponse } from "@/types/orders/outbound";
+import type {
+  CreateOutboundOrder,
+  EnrichedOrder,
+  OutboundOrder,
+} from "@/types/orders/outbound";
 import { apiFetch, isAPIError } from "@/services";
+
+interface OrdersResponse {
+  items: OutboundOrder[];
+  meta: { totalItems: number; totalPages: number; currentPage: number };
+}
 
 export function useOutboundOrders(
   page = 1,
@@ -28,8 +38,13 @@ export function useOutboundOrderDetails(orderId: string | undefined) {
 
 export function useCreateOutboundOrder() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: any) =>
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateOutboundOrder) =>
       apiFetch("/outbound-orders", {
         method: "POST",
         body: JSON.stringify(data),
@@ -37,26 +52,33 @@ export function useCreateOutboundOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["outbound-orders"] });
       toast({ title: "Outbound order created — reserving stock" });
+      setApiError(null);
     },
     onError: (error) => {
-      if (isAPIError(error))
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+      if (isAPIError(error)) {
+        setApiError(error);
+        if (!error.errors)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+      }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
 export function useConfirmOutboundOrder() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/outbound-orders/${id}/confirm`, { method: "PATCH" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["outbound-orders"] });
-      toast({ title: "Order confirmed — processing shipment" });
+      toast({ title: "Order confirmed — processing" });
     },
     onError: (error) => {
       if (isAPIError(error))
@@ -71,6 +93,7 @@ export function useConfirmOutboundOrder() {
 
 export function useCancelOutboundOrder() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/outbound-orders/${id}/cancel`, { method: "POST" }),

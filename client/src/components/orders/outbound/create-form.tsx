@@ -50,7 +50,11 @@ export function CreateOutboundOrderForm({ onClose }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-2">
       <FormField
         label="Customer Name"
-        error={getFieldError("customer_name", errors)}
+        error={getFieldError(
+          "customer_name",
+          errors,
+          createOrder.apiError?.errors,
+        )}
         required
       >
         <Input {...register("customer_name")} />
@@ -58,7 +62,11 @@ export function CreateOutboundOrderForm({ onClose }: Props) {
 
       <FormField
         label="Warehouse"
-        error={getFieldError("warehouse_id", errors)}
+        error={getFieldError(
+          "warehouse_id",
+          errors,
+          createOrder.apiError?.errors,
+        )}
         required
       >
         <WarehouseCombobox
@@ -66,11 +74,6 @@ export function CreateOutboundOrderForm({ onClose }: Props) {
           value={control._formValues.warehouse_id}
           onChange={(id) => setValue("warehouse_id", id)}
         />
-        {errors.warehouse_id && (
-          <p className="text-xs text-destructive mt-1">
-            {errors.warehouse_id.message}
-          </p>
-        )}
       </FormField>
 
       <div className="space-y-2">
@@ -92,33 +95,60 @@ export function CreateOutboundOrderForm({ onClose }: Props) {
             key={field.id}
             className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2 rounded-md border p-3"
           >
-            <select
-              className="h-9 rounded-md border px-3 text-sm bg-background w-full"
-              {...register(`items.${i}.product_id`)}
+            <FormField
+              label=""
+              error={getFieldError(
+                `items.${i}.product_id` as any,
+                errors,
+                createOrder.apiError?.errors,
+              )}
             >
-              <option value="">Select product</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.sku})
-                </option>
-              ))}
-            </select>
+              <select
+                className="h-9 rounded-md border px-3 text-sm bg-background w-full"
+                {...register(`items.${i}.product_id`)}
+              >
+                <option value="">Select product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+            </FormField>
             <div className="grid grid-cols-[1fr,1fr,auto] gap-2 items-center">
-              <Input
-                type="number"
-                min={1}
-                placeholder="Qty"
-                {...register(`items.${i}.quantity`, { valueAsNumber: true })}
-                className="w-full min-w-[60px]"
-              />
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="Cost"
-                {...register(`items.${i}.unit_cost`, { valueAsNumber: true })}
-                className="w-full min-w-[80px]"
-              />
+              <FormField
+                label=""
+                error={getFieldError(
+                  `items.${i}.quantity` as any,
+                  errors,
+                  createOrder.apiError?.errors,
+                )}
+              >
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Qty"
+                  {...register(`items.${i}.quantity`, { valueAsNumber: true })}
+                  className="w-full min-w-[60px]"
+                />
+              </FormField>
+              <FormField
+                label=""
+                error={getFieldError(
+                  `items.${i}.unit_cost` as any,
+                  errors,
+                  createOrder.apiError?.errors,
+                )}
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Cost"
+                  {...register(`items.${i}.unit_cost`, { valueAsNumber: true })}
+                  className="w-full min-w-[80px]"
+                />
+              </FormField>
               <Button
                 type="button"
                 variant="ghost"

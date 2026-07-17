@@ -1,6 +1,12 @@
 import type { Pagination } from "..";
 import type { Payment } from "../payments";
 
+export interface CreateOutboundOrder {
+  warehouse_id: string;
+  customer_name: string;
+  items: { product_id: string; quantity: number; unit_cost: number }[];
+}
+
 export interface OutboundOrderItem {
   id: string;
   product_id: string;
@@ -31,7 +37,7 @@ export interface EnrichedOrder extends OutboundOrder {
     attempts: number;
     created_at: string;
   }[];
-  outbound_items?: (OutboundOrder["outbound_items"][number] & {
+  outbound_items?: (OutboundOrderItem & {
     product?: {
       id: string;
       name: string;
@@ -39,7 +45,7 @@ export interface EnrichedOrder extends OutboundOrder {
       unit_price: number;
     } | null;
   })[];
-  payment: Payment;
+  payment?: Payment;
 }
 
 export interface OutboundOrder {

@@ -1,7 +1,17 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/hooks/use-toast";
-import type { EnrichedOrder, InboundOrdersResponse } from "@/types/orders/inbound";
 import { apiFetch, isAPIError } from "@/services";
+import { toast } from "@/hooks/use-toast";
+import type {
+  CreateInboundOrder,
+  EnrichedOrder,
+  InboundOrder,
+} from "@/types/orders/inbound";
+
+interface OrdersResponse {
+  items: InboundOrder[];
+  meta: { totalItems: number; totalPages: number; currentPage: number };
+}
 
 export function useInboundOrders(
   page = 1,
@@ -12,16 +22,29 @@ export function useInboundOrders(
   return useQuery({
     queryKey: ["inbound-orders", { page, limit, search, warehouseId }],
     queryFn: () =>
-      apiFetch<InboundOrdersResponse>(
+      apiFetch<OrdersResponse>(
         `/inbound-orders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&warehouse_id=${warehouseId}`,
       ),
   });
 }
 
+export function useInboundOrderDetails(orderId: string | undefined) {
+  return useQuery({
+    queryKey: ["inbound-order", orderId],
+    queryFn: () => apiFetch<EnrichedOrder>(`/inbound-orders/${orderId}`),
+    enabled: !!orderId,
+  });
+}
+
 export function useCreateInboundOrder() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: any) =>
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateInboundOrder) =>
       apiFetch("/inbound-orders", {
         method: "POST",
         body: JSON.stringify(data),
@@ -29,20 +52,27 @@ export function useCreateInboundOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inbound-orders"] });
       toast({ title: "Inbound order created" });
+      setApiError(null);
     },
     onError: (error) => {
-      if (isAPIError(error))
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+      if (isAPIError(error)) {
+        setApiError(error);
+        if (!error.errors)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+      }
     },
   });
+
+  return { ...mutation, apiError };
 }
 
 export function useReceiveInboundOrder() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       id,
@@ -58,8 +88,7 @@ export function useReceiveInboundOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inbound-orders"] });
       qc.invalidateQueries({ queryKey: ["inbound-order"] });
-      qc.invalidateQueries({ queryKey: ["stock-levels"] });
-      toast({ title: "Order received — processing in background" });
+      toast({ title: "Order is being processed" });
     },
     onError: (error) => {
       if (isAPIError(error))
@@ -74,6 +103,7 @@ export function useReceiveInboundOrder() {
 
 export function useCancelInboundOrder() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/inbound-orders/${id}/cancel`, { method: "POST" }),
@@ -89,13 +119,5 @@ export function useCancelInboundOrder() {
           description: error.message,
         });
     },
-  });
-}
-
-export function useInboundOrderDetails(orderId: string | undefined) {
-  return useQuery({
-    queryKey: ["inbound-order", orderId],
-    queryFn: () => apiFetch<EnrichedOrder>(`/inbound-orders/${orderId}`),
-    enabled: !!orderId,
   });
 }

@@ -105,6 +105,9 @@ export default function Warehouses() {
           onSave={handleSave}
           isLoading={createWarehouse.isPending || updateWarehouse.isPending}
           onClose={() => dialog.close("warehouse-form")}
+          serverErrors={
+            createWarehouse.apiError?.errors || updateWarehouse.apiError?.errors
+          }
         />
       </AppDialog>
     </div>
