@@ -42,12 +42,20 @@ console.log("node env ", process.env.NODE_ENV);
 
 const ext = isProd ? "js" : "ts";
 
-// in prod, everything compiles into ONE shared dist tree: dist/<service-name>/src/...
+// in prod, each service compiles its own tree at dist/<service-name>/src/...
 // in dev, each service's own src is a sibling folder: ../<service-name>/src/...
 const servicePath = (service: string, subpath: string) =>
   isProd
-    ? join(cwd(), `dist/${service}/src/${subpath}.${ext}`)
+    ? join(cwd(), `../${service}/dist/${service}/src/${subpath}.${ext}`)
     : join(cwd(), `../${service}/src/${subpath}.${ext}`);
+
+// entities can land either under <service>/dist/<service>/src/... (service-owned)
+// or <service>/dist/shared/src/... (shared entities recompiled into that service's tree),
+// so scan the whole dist tree for each service rather than assuming one fixed subpath
+const allEntitiesForService = (service: string) =>
+  isProd
+    ? join(cwd(), `../${service}/dist/**/*.entity.${ext}`)
+    : join(cwd(), `../${service}/src/**/*.entity.${ext}`);
 
 const options: DataSourceOptions & SeederOptions = {
   type: "postgres",
@@ -55,10 +63,10 @@ const options: DataSourceOptions & SeederOptions = {
 
   entities: [
     join(cwd(), isProd ? "dist/shared/src" : "src", `**/*.entity.${ext}`),
-    servicePath("auth-service", "**/*.entity"),
-    servicePath("inventory-service", "**/*.entity"),
-    servicePath("payment-service", "**/*.entity"),
-    servicePath("orders-service", "**/*.entity"),
+    allEntitiesForService("auth-service"),
+    allEntitiesForService("inventory-service"),
+    allEntitiesForService("payment-service"),
+    allEntitiesForService("orders-service"),
   ],
 
   migrations: [
@@ -69,7 +77,10 @@ const options: DataSourceOptions & SeederOptions = {
     ),
   ],
 
-  seeds: [servicePath("inventory-service", "seeds/**/*.seeder")],
+  seeds: [
+    servicePath("auth-service", "seeds/**/*.seeder"),
+    servicePath("inventory-service", "seeds/**/*.seeder"),
+  ],
 
   synchronize: false,
 };

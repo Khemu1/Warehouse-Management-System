@@ -16,7 +16,7 @@ import {
 import type { InboundOrder } from "@/types/orders/inbound";
 
 interface Props {
-  order: InboundOrder | null;
+  order?: InboundOrder | null;
   onClose: () => void;
 }
 

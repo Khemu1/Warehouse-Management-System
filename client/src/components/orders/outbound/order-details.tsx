@@ -19,7 +19,7 @@ const statusVariant: Record<string, string> = {
 };
 
 interface Props {
-  order: OutboundOrder | null;
+  order?: OutboundOrder | null;
   onClose: () => void;
 }
 

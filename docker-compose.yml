@@ -50,13 +50,13 @@ services:
 
   api-gateway-service:
     build:
-      context: .
+      context: ./server
       dockerfile: api-gateway/Dockerfile
       args:
         SERVICE_NAME: api-gateway
     container_name: wms-api-gateway
     restart: unless-stopped
-    env_file: ./api-gateway/.env.development
+    env_file: ./server/api-gateway/.env.development
     environment:
       DATABASE_HOST: postgres
       REDIS_HOST: redis
@@ -70,16 +70,9 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3002:3001"
+      - "3001:3001"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "-q",
-          "--spider",
-          "http://localhost:3001/api/health/live",
-        ]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health/live"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -87,13 +80,13 @@ services:
 
   auth-service:
     build:
-      context: .
+      context: ./server
       dockerfile: auth-service/Dockerfile
       args:
         SERVICE_NAME: auth-service
     container_name: wms-auth-service
     restart: unless-stopped
-    env_file: ./auth-service/.env.development
+    env_file: ./server/auth-service/.env.development
     environment:
       DATABASE_HOST: postgres
       DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
@@ -109,13 +102,13 @@ services:
 
   inventory-service:
     build:
-      context: .
+      context: ./server
       dockerfile: inventory-service/Dockerfile
       args:
         SERVICE_NAME: inventory-service
     container_name: wms-inventory-service
     restart: unless-stopped
-    env_file: ./inventory-service/.env.development
+    env_file: ./server/inventory-service/.env.development
     environment:
       DATABASE_HOST: postgres
       DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
@@ -135,13 +128,13 @@ services:
 
   orders-service:
     build:
-      context: .
+      context: ./server
       dockerfile: orders-service/Dockerfile
       args:
         SERVICE_NAME: orders-service
     container_name: wms-orders-service
     restart: unless-stopped
-    env_file: ./orders-service/.env.development
+    env_file: ./server/orders-service/.env.development
     environment:
       DATABASE_HOST: postgres
       DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
@@ -161,13 +154,13 @@ services:
 
   payment-service:
     build:
-      context: .
+      context: ./server
       dockerfile: payment-service/Dockerfile
       args:
         SERVICE_NAME: payment-service
     container_name: wms-payment-service
     restart: unless-stopped
-    env_file: ./payment-service/.env.development
+    env_file: ./server/payment-service/.env.development
     environment:
       DATABASE_HOST: postgres
       DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
@@ -188,10 +181,10 @@ services:
         condition: service_started
 
   migrator:
-    env_file: ./shared/.env.production
     build:
-      context: .
+      context: ./server
       dockerfile: shared/Dockerfile.migrate
+    env_file: ./server/shared/.env.production
     environment:
       DATABASE_URL: postgresql://postgres:khemu123456@postgres:5432/wms-platform
       NODE_ENV: production
@@ -200,6 +193,26 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: wms-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      api-gateway-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      orders-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   postgres_data:

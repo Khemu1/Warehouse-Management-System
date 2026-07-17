@@ -6,7 +6,7 @@ import { useInboundOrderDetails } from "@/hooks/use-inbound-orders";
 import { GoAlertFill } from "react-icons/go";
 
 interface Props {
-  order: InboundOrder | null;
+  order?: InboundOrder | null;
   onClose: () => void;
 }
 

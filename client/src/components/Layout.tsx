@@ -13,7 +13,6 @@ import {
   LuChevronDown,
   LuMenu,
   LuBox,
-  LuBell,
   LuPackage,
   LuWarehouse,
 } from "react-icons/lu";
