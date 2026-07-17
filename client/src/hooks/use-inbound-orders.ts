@@ -72,8 +72,12 @@ export function useCreateInboundOrder() {
 
 export function useReceiveInboundOrder() {
   const qc = useQueryClient();
+  const [apiError, setApiError] = useState<{
+    message: string;
+    errors?: Record<string, string>;
+  } | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({
       id,
       items,
@@ -91,14 +95,18 @@ export function useReceiveInboundOrder() {
       toast({ title: "Order is being processed" });
     },
     onError: (error) => {
-      if (isAPIError(error))
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
-        });
+      if (isAPIError(error)) {
+        setApiError(error);
+        if (!error.errors)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+      }
     },
   });
+  return { ...mutation, apiError };
 }
 
 export function useCancelInboundOrder() {

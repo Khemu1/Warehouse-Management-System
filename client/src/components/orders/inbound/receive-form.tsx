@@ -30,10 +30,6 @@ export function ReceiveInboundOrderForm({ order, onClose }: Props) {
     formState: { errors },
   } = useForm<ReceiveInboundFormData>({
     resolver: zodResolver(receiveInboundSchema),
-    defaultValues: {
-      order_id: order?.id ?? "",
-      items: [],
-    },
     values: {
       order_id: order?.id ?? "",
       items:
@@ -105,6 +101,7 @@ export function ReceiveInboundOrderForm({ order, onClose }: Props) {
                   error={getFieldError(
                     `items.${i}.received_quantity` as any,
                     errors,
+                    receiveOrder.apiError?.errors,
                   )}
                 >
                   <Input
