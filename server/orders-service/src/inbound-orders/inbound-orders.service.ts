@@ -34,19 +34,33 @@ export class InboundOrdersService {
   ) {}
 
   async create(dto: CreateInboundOrderMessageDto) {
-    const warehouseExists = await this.inventoryClient.send(
-      'doesWarehouseExist',
-      {
-        id: dto.warehouse_id,
-      },
-    );
+    const warehouse = await this.inventoryClient.send('doesWarehouseExist', {
+      id: dto.warehouse_id,
+    });
 
-    if (!warehouseExists) {
+    if (!warehouse) {
       throw new NotFoundException(`Warehouse ${dto.warehouse_id} not found`);
     }
 
-    const productIds = dto.items.map((item) => item.product_id);
+    const currentInventory: { total: number }[] =
+      await this.inventoryClient.send('getWarehouseTotalStock', {
+        warehouse_id: dto.warehouse_id,
+      });
 
+    const currentTotal = currentInventory[0]?.total || 0;
+    const incomingTotal = dto.items.reduce(
+      (sum, i) => sum + i.expected_quantity,
+      0,
+    );
+    const projectedTotal = currentTotal + incomingTotal;
+
+    if (projectedTotal > warehouse.capacity) {
+      throw new ConflictException(
+        `Warehouse capacity exceeded. Current: ${currentTotal}, Incoming: ${incomingTotal}, Capacity: ${warehouse.capacity}`,
+      );
+    }
+
+    const productIds = dto.items.map((item) => item.product_id);
     const { allExist, missingIds } = await this.inventoryClient.send(
       'doesProductsExist',
       productIds,

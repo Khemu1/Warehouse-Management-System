@@ -43,4 +43,5 @@ export class WarehousesController {
   async doesExist(@Payload() data: { id: string }) {
     return this.warehousesService.doesWarehouseExist(data.id);
   }
+
 }

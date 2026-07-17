@@ -427,4 +427,11 @@ export class InventoryService {
     });
     return movement;
   }
+  async getWarehouseTotalStock(warehouse_id: string) {
+    return this.repo
+      .createQueryBuilder('inventory')
+      .select('COALESCE(SUM(inventory.quantity), 0)', 'total')
+      .where('inventory.warehouse_id = :warehouse_id', { warehouse_id })
+      .getRawOne();
+  }
 }

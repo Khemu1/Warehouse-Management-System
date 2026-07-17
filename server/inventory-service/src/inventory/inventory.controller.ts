@@ -46,7 +46,10 @@ export class InventoryController {
   async didItemMove(@Payload() data: { idempotency_key: string }) {
     return this.inventoryService.didItemMove(data.idempotency_key);
   }
-
+  @MessagePattern('getWarehouseTotalStock')
+  async getWarehouseTotalStock(@Payload() data: { warehouse_id: string }) {
+    return this.inventoryService.getWarehouseTotalStock(data.warehouse_id);
+  }
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {
     return {

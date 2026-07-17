@@ -90,7 +90,7 @@ export class WarehousesService {
   async doesWarehouseExist(id: string): Promise<boolean> {
     const warehouse = await this.repo.findOne({
       where: { id },
-      select: { id: true },
+      select: { id: true, capacity: true },
     });
     return !!warehouse;
   }
