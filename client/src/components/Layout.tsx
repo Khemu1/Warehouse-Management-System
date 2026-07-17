@@ -117,7 +117,7 @@ export function Layout() {
         </div>
         {!collapsed && (
           <span className="ml-2 text-[15px] font-semibold whitespace-nowrap">
-            Warehouse Ops
+            StockFlow{" "}
           </span>
         )}
       </Link>
@@ -283,11 +283,8 @@ export function Layout() {
             <div className="flex h-7 w-7 items-center justify-center rounded bg-primary/10">
               <LuBox className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-sm font-semibold">Warehouse Ops</span>
+            <span className="text-sm font-semibold">StockFlow</span>
           </div>
-          <Button variant="ghost" size="icon">
-            <LuBell className="h-4 w-4" />
-          </Button>
         </header>
 
         <div className="p-4 lg:p-6">
