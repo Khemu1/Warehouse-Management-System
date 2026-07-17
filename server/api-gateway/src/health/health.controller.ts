@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Controller, Get, Inject } from '@nestjs/common';
 import {
   HealthCheckService,
@@ -7,7 +6,9 @@ import {
 } from '@nestjs/terminus';
 import type { ISafeClient } from '@shared/types';
 import { RabbitMQHealthIndicator } from './rabbitmq.health';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(
@@ -21,12 +22,17 @@ export class HealthController {
 
   @Get('live')
   @HealthCheck()
+  @ApiOperation({ summary: 'Liveness check' })
+  @ApiResponse({ status: 200, description: 'Service is alive' })
   checkLiveness(): Promise<HealthCheckResult> {
     return this.health.check([]);
   }
 
   @Get('ready')
   @HealthCheck()
+  @ApiOperation({ summary: 'Readiness check' })
+  @ApiResponse({ status: 200, description: 'All services healthy' })
+  @ApiResponse({ status: 503, description: 'One or more services unhealthy' })
   checkReadiness(): Promise<HealthCheckResult> {
     return this.health.check([
       () =>

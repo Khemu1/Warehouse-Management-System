@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -30,7 +31,10 @@ export function WarehousesTable({
   onEdit,
   onDelete,
 }: WarehousesTableProps) {
-  const columns = ["Name", "Location", "Capacity", ""];
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const columns = isAdmin
+    ? ["Name", "Location", "Capacity", ""]
+    : ["Name", "Location", "Capacity"];
 
   if (isLoading) {
     return (
@@ -45,7 +49,7 @@ export function WarehousesTable({
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              {Array.from({ length: 4 }).map((_, j) => (
+              {Array.from({ length: columns.length }).map((_, j) => (
                 <TableCell key={j}>
                   <Skeleton className="h-4 w-full" />
                 </TableCell>
@@ -70,7 +74,7 @@ export function WarehousesTable({
         <TableBody>
           <TableRow>
             <TableCell
-              colSpan={4}
+              colSpan={columns.length}
               className="text-center py-8 text-muted-foreground"
             >
               No warehouses found.
@@ -96,26 +100,28 @@ export function WarehousesTable({
             <TableCell className="font-medium">{warehouse.name}</TableCell>
             <TableCell>{warehouse.location}</TableCell>
             <TableCell>{warehouse.capacity.toLocaleString()}</TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <LuEllipsis className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(warehouse)}>
-                    <LuPencil className="mr-2 h-4 w-4" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => onDelete(warehouse.id)}
-                  >
-                    <LuTrash2 className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+            {isAdmin && (
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <LuEllipsis className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(warehouse)}>
+                      <LuPencil className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => onDelete(warehouse.id)}
+                    >
+                      <LuTrash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>

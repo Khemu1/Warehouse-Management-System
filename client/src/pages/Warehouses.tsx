@@ -15,8 +15,11 @@ import { AppDialog } from "@/components/dialogs/app-dialog";
 import { WarehouseForm } from "@/components/inventory/warehouse/warehouse-form";
 import { WarehousesTable } from "@/components/inventory/warehouse/warehouses-table";
 import type { Warehouse } from "@/types/inventory/warehouses";
+import { useAuthStore } from "@/stores/auth-store";
+import { Roles } from "@/types/users";
 
 export default function Warehouses() {
+  const user = useAuthStore((state) => state.user);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const dialog = useDialogStore();
@@ -50,10 +53,12 @@ export default function Warehouses() {
             Manage your warehouse locations.
           </p>
         </div>
-        <Button onClick={() => dialog.open("warehouse-form")}>
-          <LuPlus className="mr-1.5 h-4 w-4" />
-          Add Warehouse
-        </Button>
+        {user?.role === Roles.ADMIN && (
+          <Button onClick={() => dialog.open("warehouse-form")}>
+            <LuPlus className="mr-1.5 h-4 w-4" />
+            Add Warehouse
+          </Button>
+        )}
       </div>
 
       <div className="relative">

@@ -14,6 +14,7 @@ import { OutboundOrdersModule } from './orders/outbound-orders/outbound-orders.m
 import { PaymentsModule } from './payments/payments.module';
 import { RateLimiterGuard } from '../../shared/src/guards/rate-limiter.guard';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UsersModule } from './users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,6 +32,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     OutboundOrdersModule,
     PaymentsModule,
     DashboardModule,
+    UsersModule,
   ],
   providers: [
     {

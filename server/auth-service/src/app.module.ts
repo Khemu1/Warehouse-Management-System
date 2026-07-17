@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { GlobalErrorFilter } from '@shared/filters/global-error.filter';
 import { CustomError } from '@shared/filters/CustomError';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CustomError } from '@shared/filters/CustomError';
       useClass: TypeOrmConfigService,
     }),
     AuthModule,
+    UsersModule,
   ],
   providers: [
     {

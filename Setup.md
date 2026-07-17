@@ -58,6 +58,7 @@ Each service has its own env file, loaded via `env_file:` in `docker-compose.yml
 | auth-service      | `auth-service/.env.development`      |
 | inventory-service | `inventory-service/.env.development` |
 | orders-service    | `orders-service/.env.development`    |
+| payment-service   | `payment-service/.env.development`    |
 | migrator          | `shared/.env.production`             |
 
 Some values (`DATABASE_URL`, `RABBITMQ_URL`, `DATABASE_HOST`, `REDIS_HOST`) are also set directly in `docker-compose.yml` under `environment:` for each service — these override anything conflicting in the env files, since Compose applies `environment:` after `env_file:`.
@@ -71,10 +72,12 @@ Some values (`DATABASE_URL`, `RABBITMQ_URL`, `DATABASE_HOST`, `REDIS_HOST`) are 
 | postgres          | wms-postgres          | 5435                         | 5432           | avoids clashing with a native/other Postgres on 5432 |
 | redis             | wms-redis             | 6380                         | 6379           | avoids clashing with a native/other Redis on 6379    |
 | rabbitmq          | wms-rabbitmq          | 5673 (amqp), 15673 (mgmt UI) | 5672, 15672    | mgmt UI: http://localhost:15673                      |
-| api-gateway       | wms-api-gateway       | 3000                         | 3000           | public REST entry point                              |
-| auth-service      | wms-auth-service      | 3001                         | 3000           | published for direct debugging/inspection            |
-| inventory-service | wms-inventory-service | 3002                         | 3000           | published for direct debugging/inspection            |
-| orders-service    | wms-orders-service    | 3003                         | 3000           | published for direct debugging/inspection            |
+| api-gateway       | wms-api-gateway       | 3001                        | 3000           | public REST entry point                              |
+| auth-service      | wms-auth-service      |                              |                | published for direct debugging/inspection            |
+| inventory-service | wms-inventory-service |                              |                | published for direct debugging/inspection            |
+| orders-service    | wms-orders-service    |                              |                | published for direct debugging/inspection            |
+| orders-service    | wms-orders-service    |                              |                | published for direct debugging/inspection            |
+
 
 > **Note:** auth/inventory/orders services communicate with the gateway over RabbitMQ, not HTTP — publishing their ports is for local debugging/inspection convenience only, not because anything calls them over HTTP directly. If your `docker-compose.yml` doesn't yet have `ports:` entries for these three services, add:
 >
@@ -194,10 +197,3 @@ CMD ["sh", "-c", "node dist/${SERVICE_NAME}/src/main.js"]
 - **`.dockerignore` matters.** Without one excluding `**/node_modules` and `**/dist`, stale host-machine build artiffacts can get copied into images, occasionally causing corrupted/non-executable binaries (we hit this with `@nestjs/cli`'s `nest` binary specifically).
 - **`npm run build` in `orders-service` uses `nest build`**, which depends on the `.bin/nest` symlink being executable. If you ever see `sh: nest: Permission denied` during a build, that's an npm-cache permission bug — not a code issue. Fix: use `node node_modules/@nestjs/cli/bin/nest.js build` instead, which is immune to the executable-bit problem.
 - **Seed/migration globs fail silently.** `typeorm-extension`'s glob-based `seeds`/`entities` config doesn't throw if a glob matches zero files — it just seeds nothing and still logs "success." If seeding "succeeds" but nothing shows up in the DB, check that the expected `dist/<service>/...` paths actually exist and contain compiled `.js` files.
-
-## 11. Open Items / Things to Confirm
-
-- [done] Confirm exact npm script name for running migrations (only `seed:run:prod` has been explicitly confirmed working).
-- [ ] Add `ports:` mappings for `auth-service`, `inventory-service`, `orders-service` in `docker-compose.yml` if not already present (3001/3002/3003 → 3000).
-- [ ] Update any remaining `.env.*` files still referencing `ticketing-platform`/`ticketing:ticketing123`.
-- [ ] Decide when/how to bring `payment-service` into the deployment and into the gateway's readiness check.

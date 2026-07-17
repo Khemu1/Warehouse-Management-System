@@ -4,6 +4,14 @@
   "sourceRoot": "src",
   "entryFile": "api-gateway/src/main",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "dtoFileNameSuffix": [".dto.ts", ".dtos.ts", ".entity.ts"]
+        }
+      }
+    ]
   }
 }

@@ -17,20 +17,6 @@ export class AuthDto {
   token: string;
 }
 
-export class CreateAuthDto {
-  @IsString()
-  @MaxLength(35)
-  @MinLength(10)
-  name: string;
-
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  @MaxLength(35)
-  @MinLength(10)
-  password: string;
-}
 
 export class LoginAuthDto {
   @IsEmail()

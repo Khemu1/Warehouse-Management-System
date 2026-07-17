@@ -15,14 +15,13 @@ import {
   LuBox,
   LuPackage,
   LuWarehouse,
+  LuUser,
 } from "react-icons/lu";
 import {
   IoArrowDownCircleOutline,
   IoArrowUpCircleOutline,
 } from "react-icons/io5";
-
 import { FaChartBar } from "react-icons/fa";
-
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -35,10 +34,12 @@ interface NavItem {
     icon: React.ComponentType<{ className?: string }>;
     path: string;
   }[];
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: "Dashboard", icon: LuLayoutDashboard, path: "/dashboard" },
+  { label: "Users", icon: LuUser, path: "/users", adminOnly: true },
   {
     label: "Inventory",
     icon: LuPackageSearch,
@@ -62,7 +63,7 @@ const navItems: NavItem[] = [
 ];
 
 const bottomItems = [
-  { label: "Settings", icon: LuSettings, path: "/settings" },
+  { label: "Settings", icon: LuSettings, path: "/settings", adminOnly: true },
   { label: "Logout", icon: LuLogOut, path: "/logout" },
 ];
 
@@ -71,15 +72,20 @@ export function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
+  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.adminOnly && user?.role !== "admin") return false;
+    return true;
+  });
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // Auto-expand parent if child is active
   useEffect(() => {
-    navItems.forEach((item) => {
+    visibleNavItems.forEach((item) => {
       if (item.children) {
         const isChildActive = item.children.some(
           (child) => location.pathname === child.path,
@@ -116,15 +122,14 @@ export function Layout() {
         </div>
         {!collapsed && (
           <span className="ml-2 text-[15px] font-semibold whitespace-nowrap">
-            StockFlow{" "}
+            StockFlow
           </span>
         )}
       </Link>
 
       {/* Main Nav */}
       <nav className="flex flex-col gap-1">
-        {navItems.map((item) => {
-          // Item with children
+        {visibleNavItems.map((item) => {
           if (item.children) {
             const isExpanded = expandedItems.includes(item.label);
             return (
@@ -176,7 +181,6 @@ export function Layout() {
             );
           }
 
-          // Regular item (no children)
           return (
             <Link
               key={item.path}
@@ -251,7 +255,6 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar */}
       <aside
         className={cn(
           "hidden border-r bg-white lg:flex lg:flex-col lg:flex-shrink-0 transition-all duration-200",
@@ -261,14 +264,12 @@ export function Layout() {
         <SidebarContent />
       </aside>
 
-      {/* Mobile Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[260px] p-0">
           <SidebarContent />
         </SheetContent>
       </Sheet>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto bg-background">
         <header className="sticky top-0 z-30 flex h-12 items-center justify-between gap-2 border-b bg-white px-3 lg:hidden">
           <div className="flex items-center gap-2">

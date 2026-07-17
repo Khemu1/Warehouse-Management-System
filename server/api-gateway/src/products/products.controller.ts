@@ -9,13 +9,14 @@ import {
   Query,
   HttpCode,
   ParseUUIDPipe,
+  Inject,
 } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
 import { CreateProductDto, UpdateProductDto } from '@shared/dtos/products.dto';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { Roles } from '@shared/types';
 import type { JwtPayload, ISafeClient } from '@shared/types';
 import { User } from '@shared/decorators/user.decorator';
+import { RateLimit } from '@shared/decorators/rate-limit.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -25,26 +26,33 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
+import {
+  PaginatedProductsResponse,
+  ProductResponse,
+  ApiErrorResponse,
+} from '@shared/dtos/responses.dto';
 
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
-@AllowedRoles(Roles.ADMIN, Roles.STAFF)
+@RateLimit()
 export class ProductsController {
   constructor(
     @Inject('INVENTORY_SERVICE') private inventoryClient: ISafeClient,
   ) {}
 
   @Get()
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @ApiOperation({ summary: 'Get all products (paginated)' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiResponse({ status: 200, description: 'Paginated products list' })
+  @ApiResponse({ status: 200, type: PaginatedProductsResponse })
+  @ApiResponse({ status: 401, type: ApiErrorResponse })
   findAll(
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-    @Query('search') search: string = '',
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+    @Query('search') search = '',
     @User() user: JwtPayload,
   ) {
     return this.inventoryClient.send('findAllProducts', {
@@ -56,38 +64,41 @@ export class ProductsController {
   }
 
   @Post()
+  @AllowedRoles(Roles.ADMIN)
   @ApiOperation({ summary: 'Create a new product' })
   @ApiBody({ type: CreateProductDto })
-  @ApiResponse({ status: 201, description: 'Product created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 201,
+    description: 'Product created',
+    type: ProductResponse,
+  })
+  @ApiResponse({ status: 400, type: ApiErrorResponse })
   createProduct(@Body() dto: CreateProductDto, @User() user: JwtPayload) {
     return this.inventoryClient.send('createProduct', { ...dto, ...user });
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update an existing product' })
+  @AllowedRoles(Roles.ADMIN)
+  @ApiOperation({ summary: 'Update a product' })
   @ApiParam({ name: 'id', description: 'Product UUID' })
   @ApiBody({ type: UpdateProductDto })
-  @ApiResponse({ status: 200, description: 'Product updated successfully' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({ status: 200, type: ProductResponse })
+  @ApiResponse({ status: 404, type: ApiErrorResponse })
   updateProduct(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProductDto,
     @User() user: JwtPayload,
   ) {
-    return this.inventoryClient.send('updateProduct', {
-      ...dto,
-      id,
-      ...user,
-    });
+    return this.inventoryClient.send('updateProduct', { ...dto, id, ...user });
   }
 
   @Delete(':id')
   @HttpCode(204)
+  @AllowedRoles(Roles.ADMIN)
   @ApiOperation({ summary: 'Delete a product' })
   @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiResponse({ status: 204, description: 'Product deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({ status: 204, description: 'Deleted' })
+  @ApiResponse({ status: 404, type: ApiErrorResponse })
   deleteProduct(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: JwtPayload,
@@ -96,25 +107,24 @@ export class ProductsController {
   }
 
   @Get(':id')
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiResponse({ status: 200, description: 'Product details' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({ status: 200, type: ProductResponse })
+  @ApiResponse({ status: 404, type: ApiErrorResponse })
   getProduct(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
     return this.inventoryClient.send('findOneProduct', { id, ...user });
   }
 
   @Get('warehouse/:id')
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
   @ApiOperation({ summary: 'Get products by warehouse' })
   @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  @ApiResponse({ status: 200, description: 'Warehouse products list' })
+  @ApiResponse({ status: 200, type: [ProductResponse] })
   getWarehouseProducts(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: JwtPayload,
   ) {
-    return this.inventoryClient.send('findWarehouseProducts', {
-      id,
-      ...user,
-    });
+    return this.inventoryClient.send('findWarehouseProducts', { id, ...user });
   }
 }

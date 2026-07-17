@@ -1,3 +1,4 @@
+import type { Roles } from "@/types/users";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -5,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "staff";
+  role: Roles;
   token: string;
 }
 

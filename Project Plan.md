@@ -7,238 +7,209 @@ Build a microservices-based Warehouse Management System using NestJS to learn:
 - Microservices with RabbitMQ
 - CQRS pattern
 - BullMQ job queues
-- NestJS SSE (Server-Sent Events) for real-time updates
-
----
+- React + shadcn/ui admin dashboard
 
 ## Tech Stack
 
-| Layer             | Technology                            |
-| ----------------- | ------------------------------------- |
-| Backend Framework | NestJS (microservices)                |
-| Database          | PostgreSQL (shared)                   |
-| Message Broker    | RabbitMQ (service-to-service)         |
-| Caching / Locks   | Redis                                 |
-| Job Queues        | BullMQ                                |
-| Frontend          | Next.js + Shadcn UI (admin dashboard) |
-| Containerization  | Docker Compose                        |
-| API Docs          | Postman                               |
-| Payments          | Mocked                                |
-
----
+| Layer | Technology | Status |
+|---|---|---|
+| Backend Framework | NestJS (microservices) | ✅ |
+| Database | PostgreSQL (shared) | ✅ |
+| Message Broker | RabbitMQ (service-to-service) | ✅ |
+| Caching / Locks | Redis | ✅ |
+| Job Queues | BullMQ | ✅ |
+| Frontend | React + shadcn/ui + Tailwind v3 | ✅ |
+| State Management | Zustand (auth) + React Query (server) | ✅ |
+| Form Validation | Zod + React Hook Form | ✅ |
+| Containerization | Docker Compose | ✅ |
+| Payments | Mocked | ✅ |
 
 ## Architecture Overview
 
 ```
-Client (Next.js Dashboard)
+Client (React Dashboard)
       ↓
 API Gateway        ← Single entry point, JWT validation, request forwarding
       ↓
-  ┌───┴─────────────────────────────┐
-  ↓          ↓           ↓          ↓
-Auth     Inventory    Orders    Notification
-Service   Service     Service    Service
+  ┌───┴───────────────────────────────┐
+  ↓          ↓           ↓            ↓
+Auth     Inventory    Orders      Payment
+Service   Service     Service     Service
 ```
 
 ### Communication
 
-- **Client → API Gateway** — HTTP REST + SSE
-- **Gateway → Services** — RabbitMQ messages
-- **Orders → Inventory** — RabbitMQ (reserve/release stock)
-- **Orders → Payment** — RabbitMQ (process payment)
-- **Payment → Notification** — RabbitMQ (trigger confirmation)
-- **Inventory → Notification** — RabbitMQ (low stock alert)
-- **Notification → Client** — SSE (real-time inventory updates)
-- **Redis** — distributed locks, caching, rate limiting
-
----
+- Client → API Gateway — HTTP REST
+- Gateway → Services — RabbitMQ messages
+- Orders → Inventory — RabbitMQ (reserve/release stock)
+- Orders → Payment — RabbitMQ (process payment)
+- Redis — distributed locks, caching, rate limiting
 
 ## Services Breakdown
 
-### 1. API Gateway
+### 1. API Gateway ✅
 
 - Only thing the client talks to
 - Validates JWT (Guard + RolesGuard)
 - Forwards requests to correct service via RabbitMQ
-- SSE endpoint for real-time dashboard updates
-- No business logic
+- Rate limiting
+- Swagger docs
 
-### 2. Auth Service ✅ (done)
+### 2. Auth Service ✅
 
-- Register
-- Login
+- Register / Login
 - Issue JWT
-- Role: ADMIN, MANAGER, WAREHOUSE_STAFF
+- User CRUD (admin only)
+- Roles: admin, staff
+- Password hashing with bcrypt
 
-### 3. Inventory Service
+### 3. Inventory Service ✅
 
-- Manage products (CRUD)
-- Track stock levels per warehouse
-- Low stock threshold alerts
-- Transfer stock between warehouses
-- Real-time stock updates via SSE
-- Redis distributed lock when multiple orders reserve same stock
+- Products CRUD with pagination + search
+- Warehouses CRUD with pagination + search
+- Stock levels per warehouse with filters
+- Stock reservation (pessimistic write locks)
+- Stock fulfillment (deduct on ship)
+- Stock release (cancel reservation)
+- Add stock (inbound receive with idempotency)
+- Low stock threshold checks
+- Stock movements audit trail
+- Redis distributed locks for concurrent operations
 
-### 4. Orders Service
+### 4. Orders Service ✅
 
-- Create inbound orders (receiving stock)
-- Create outbound orders (shipping stock)
-- Cancel orders
-- Track order status
-- CQRS — CreateOrderCommand / GetOrdersQuery
-- Talks to Inventory Service to reserve/release stock
+- Inbound orders: create, receive, cancel
+- Outbound orders: create, reserve, confirm, cancel
+- CQRS pattern (commands vs queries)
+- Status flows:
+  - Inbound: `pending → receiving → received / needs_attention`
+  - Outbound: `pending → reserving → reserved → confirmed → shipped / needs_attention`
+- BullMQ job queues for async processing
+- Idempotency keys for stock operations
+- Failure tracking with retry attempts
 
-### 5. Payment Service
+### 5. Payment Service ✅
 
-- Process payment for outbound orders (mocked)
-- Refund on cancellation
-- Audit trail — new row per payment attempt
-
-### 6. Notification Service
-
-- Low stock email alerts via BullMQ
-- Order confirmation emails via BullMQ
-- Real-time inventory updates via SSE
-- Fire and forget — no database
-
----
-
-## Key NestJS Concepts Covered
-
-| Concept                  | Where Used                                 |
-| ------------------------ | ------------------------------------------ |
-| Microservices            | All services via RabbitMQ                  |
-| CQRS                     | Orders Service (commands vs queries)       |
-| BullMQ                   | Notification Service (email queue)         |
-| SSE                      | Notification Service (real-time dashboard) |
-| Guards                   | API Gateway (JWT + RolesGuard)             |
-| Custom Exception Filters | All services                               |
-
----
+- Process payment (mocked — auto-confirms)
+- Payment method selection (Visa, Mastercard, Fawry)
+- Public payment page for customers
+- Payment status tracking
+- Duplicate payment prevention
 
 ## Database (Shared PostgreSQL)
 
 ### Tables
 
-**users**
+**users** ✅
+- `id`, `name`, `email`, `password`, `role` (admin/staff)
 
-- id, name, email, password, role (admin/manager/staff)
+**warehouses** ✅
+- `id`, `name`, `location`, `capacity`
 
-**warehouses**
+**products** ✅
+- `id`, `name`, `description`, `sku`, `unit_price`, `low_stock_threshold`
 
-- id, name, location, capacity, manager_id
+**inventory** ✅
+- `id`, `product_id`, `warehouse_id`, `quantity`, `reserved_quantity`
 
-**products**
+**inbound_orders** ✅
+- `id`, `warehouse_id`, `supplier_name`, `status`, `total_amount`, `created_by`
 
-- id, name, description, sku, unit_price, low_stock_threshold
+**inbound_order_items** ✅
+- `id`, `inbound_order_id`, `product_id`, `expected_quantity`, `received_quantity`, `unit_cost`
 
-**inventory**
+**inbound_order_failures** ✅
+- `id`, `order_id`, `item_id`, `reason`, `attempts`, `resolved`
 
-- id, product_id, warehouse_id, quantity, reserved_quantity
+**outbound_orders** ✅
+- `id`, `warehouse_id`, `customer_name`, `status`, `total_amount`, `total_products`, `created_by`, `confirmed_by`, `cancelled_by`
 
-**inbound_orders** (receiving stock)
+**outbound_order_items** ✅
+- `id`, `outbound_order_id`, `product_id`, `quantity`, `unit_cost`
 
-- id, warehouse_id, supplier_name, status (pending/received/cancelled), created_by
+**outbound_order_failures** ✅
+- `id`, `order_id`, `item_id`, `reason`, `attempts`, `resolved`
 
-**inbound_order_items**
+**payments** ✅
+- `id`, `order_id`, `total_amount`, `status`, `payment_method`
 
-- id, inbound_order_id, product_id, expected_quantity, received_quantity
+**stock_movements** ✅
+- `id`, `idempotency_key`, `warehouse_id`, `product_id`, `quantity`, `type`
 
-**outbound_orders** (shipping stock)
+## Frontend Pages ✅
 
-- id, warehouse_id, customer_name, status (pending/confirmed/shipped/cancelled), total_amount, created_by
+| Page | Path | Features |
+|---|---|---|
+| Login | `/login` | JWT auth, role-based redirect |
+| Dashboard | `/dashboard` | Stats cards, low stock alerts, recent orders, quick actions, auto-refresh |
+| Products | `/inventory/products` | CRUD, pagination, search, Zod validation |
+| Warehouses | `/inventory/warehouses` | CRUD, pagination, search, Zod validation |
+| Stock Levels | `/inventory/stock` | Filter by warehouse, search, low stock badges |
+| Inbound Orders | `/orders/inbound` | Create, receive, cancel, view details, needs attention |
+| Outbound Orders | `/orders/outbound` | Create, reserve, payment link, confirm, cancel, view details |
+| Payments | `/payments` | List, filter by status, pagination |
+| Pay (Public) | `/pay/:orderId` | Mock payment with method selection |
+| Users | `/users` | Admin-only: CRUD, pagination, search |
 
-**outbound_order_items**
+## Frontend Architecture
 
-- id, outbound_order_id, product_id, quantity, unit_price
-
-**payments**
-
-- id, outbound_order_id, amount, status (pending/success/failed), payment_method
-
----
-
-## Key Flows
-
-### Outbound Order Flow (Most Complex)
-
-```
-1. Staff/Admin creates outbound order
-         ↓
-2. API Gateway validates JWT, forwards to Orders Service
-         ↓
-3. Orders Service acquires Redis lock on inventory
-         ↓
-4. Orders Service asks Inventory Service "is stock available?" via RabbitMQ
-         ↓
-5. If yes → reserves stock, creates order with status PENDING
-         ↓
-6. Sends message to Payment Service via RabbitMQ
-         ↓
-7. Payment Service processes (mocked) → returns success/failure
-         ↓
-8. Orders Service updates order → CONFIRMED or FAILED
-         ↓
-9. Releases Redis lock, Inventory Service updates stock levels
-         ↓
-10. Notification Service queues confirmation email via BullMQ
-    + pushes real-time stock update via SSE to dashboard
-```
-
-### Low Stock Alert Flow
-
-```
-1. Inventory updated after order confirmed
-         ↓
-2. Inventory Service checks if quantity < low_stock_threshold
-         ↓
-3. If yes → emits event to Notification Service
-         ↓
-4. Notification Service queues alert email via BullMQ
-   + pushes low stock SSE event to dashboard
-```
-
----
+| Concern | Solution |
+|---|---|
+| Auth state | Zustand (persist middleware) |
+| Server state | React Query (TanStack Query) |
+| Form validation | Zod + React Hook Form |
+| UI Components | shadcn/ui v2.3.0 |
+| Styling | Tailwind CSS v3 |
+| Routing | React Router v6 |
+| Icons | React Icons (Lucide) |
+| Toasts | shadcn toast |
+| Dialogs | Zustand dialog store + shadcn Dialog |
+| Error handling | API error → toast + inline field errors |
+| Auto-refresh | React Query `refetchInterval` (30s) |
 
 ## Folder Structure
 
 ```
 wms-platform/
-├── api-gateway/
-├── auth-service/
-├── inventory-service/
-├── orders-service/
-├── payment-service/
-├── notification-service/
-├── shared/
-├── db/
-│   └── migrations/
-└── docker-compose.yml
+├── client/                     # React frontend
+│   ├── src/
+│   │   ├── components/         # Reusable UI + feature components
+│   │   ├── hooks/              # React Query hooks
+│   │   ├── utils/                # Utilities (form-errors)
+│   │   ├── pages/               # Route pages
+│   │   ├── stores/              # Zustand stores
+│   │   ├── types/                # TypeScript types
+│   │   └── validations/          # Zod schemas
+│   └── Dockerfile
+├── server/
+│   ├── api-gateway/
+│   ├── auth-service/
+│   ├── inventory-service/
+│   ├── orders-service/
+│   ├── payment-service/
+│   └── shared/
+├── docker-compose.yml
+└── README.md
 ```
 
----
+## Status: COMPLETE ✅
 
-## Remaining Timeline (~6 weeks)
-
-| Week | Focus                                                                 |
-| ---- | --------------------------------------------------------------------- |
-| 1    | design entities, migrations, update shared DTOs                       |
-| 2    | Inventory Service (products, warehouses, stock management)            |
-| 3    | Orders Service (CQRS, Redis locks, inbound/outbound)                  |
-| 4    | Payment Service + Notification Service (BullMQ, SSE)                  |
-| 5    | Next.js dashboard (login, inventory table, orders, real-time updates) |
-| 6    | Docker Compose, Swagger, README, testing, polish                      |
-
----
-
-## Dashboard Pages (Next.js + Shadcn)
-
-- `/login` — Auth
-- `/dashboard` — Overview (stock summary, pending orders, low stock alerts)
-- `/products` — Product list, add/edit/delete
-- `/warehouses` — Warehouses list, add/edit/delete
-- `/inventory` — Stock levels per warehouse, transfer stock
-- `/orders/inbound` — Receive stock
-- `/orders/outbound` — Ship stock
-- `/payments` — payments for outbound orders
-
+| Feature | Status |
+|---|---|
+| Auth (login, JWT, roles, user CRUD) | ✅ |
+| Products CRUD | ✅ |
+| Warehouses CRUD | ✅ |
+| Stock Levels | ✅ |
+| Inbound Orders (create, receive, cancel) | ✅ |
+| Outbound Orders (create, reserve, pay, confirm, cancel) | ✅ |
+| Payments (process, list, public pay page) | ✅ |
+| Dashboard (stats, recent orders, quick links) | ✅ |
+| Form validation (Zod + RHF) | ✅ |
+| Error handling (toast + inline) | ✅ |
+| Docker Compose | ✅ |
+| BullMQ job queues | ✅ |
+| Redis distributed locks | ✅ |
+| Idempotency (stock movements) | ✅ |
+| CQRS (orders service) | ✅ |
+| Rate Limiting | ✅ |
+| Swagger Docs | ✅ |
