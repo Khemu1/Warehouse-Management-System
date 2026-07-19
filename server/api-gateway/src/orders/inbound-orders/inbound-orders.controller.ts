@@ -114,4 +114,12 @@ export class InboundOrdersController {
   findOne(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
     return this.ordersClient.send('findOneInboundOrder', { id, ...user });
   }
+
+  @Post(':id/retry')
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
+  @ApiOperation({ summary: 'Retry a needs_attention inbound order' })
+  @ApiParam({ name: 'id', description: 'Order UUID' })
+  retry(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
+    return this.ordersClient.send('retryInboundOrder', { id, ...user });
+  }
 }

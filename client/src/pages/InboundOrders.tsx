@@ -8,6 +8,7 @@ import { useDialogStore } from "@/stores/dialog-store";
 import {
   useInboundOrders,
   useCancelInboundOrder,
+  useRetryInboundOrder,
 } from "@/hooks/use-inbound-orders";
 import { useWarehouses } from "@/hooks/use-warehouses";
 import { InboundOrdersTable } from "@/components/orders/inbound/inbound-orders-table";
@@ -29,6 +30,7 @@ export default function InboundOrders() {
 
   const { data, isLoading } = useInboundOrders(page, 10, search, warehouseId);
   const cancelOrder = useCancelInboundOrder();
+  const retryOrder = useRetryInboundOrder();
 
   const orders = data?.items ?? [];
   const meta = data?.meta;
@@ -81,6 +83,7 @@ export default function InboundOrders() {
           isLoading={isLoading}
           onView={(order) => dialog.open("view-inbound", order)}
           onReceive={(order) => dialog.open("receive-inbound", order)}
+          onRetry={(id) => retryOrder.mutate(id)}
           onCancel={(id) => cancelOrder.mutate(id)}
         />
         {meta && (
@@ -113,6 +116,7 @@ export default function InboundOrders() {
           onClose={() => dialog.close("receive-inbound")}
         />
       </AppDialog>
+
       <AppDialog
         open={dialog.isOpen("view-inbound")}
         onClose={() => dialog.close("view-inbound")}

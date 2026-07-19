@@ -103,4 +103,10 @@ export class PaymentsController {
   findOne(@Param('id', ParseUUIDPipe) id: string, @User() user: JwtPayload) {
     return this.paymentsClient.send('findOnePayment', { id, ...user });
   }
+  @Post(':id/retry')
+  @AllowedRoles(Roles.ADMIN, Roles.STAFF)
+  @ApiOperation({ summary: 'Retry a failed or pending payment' })
+  retry(@Param('id', ParseUUIDPipe) id: string) {
+    return this.paymentsClient.send('retryPayment', { id });
+  }
 }

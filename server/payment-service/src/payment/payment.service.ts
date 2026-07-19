@@ -63,6 +63,25 @@ export class PaymentService {
     }
   }
 
+  async retry(paymentId: string) {
+    const payment = await this.repo.findOne({ where: { id: paymentId } });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (payment.status === PaymentStatus.CONFIRMED) {
+      throw new ConflictException('Payment already confirmed');
+    }
+
+    payment.status = PaymentStatus.PENDING;
+    await this.repo.save(payment);
+
+    try {
+      payment.status = PaymentStatus.CONFIRMED;
+      return await this.repo.save(payment);
+    } catch {
+      payment.status = PaymentStatus.FAILED;
+      await this.repo.save(payment);
+      throw new ConflictException('Payment failed');
+    }
+  }
   async findAll(
     page: number = 1,
     limit: number = 10,

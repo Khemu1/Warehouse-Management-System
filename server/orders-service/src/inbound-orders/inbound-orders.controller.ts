@@ -70,7 +70,10 @@ export class InboundOrdersController {
     return await this.inboundOrdersService.markNeedsAttention(data);
   }
 
-  
+  @MessagePattern('retryInboundOrder')
+  async retry(@Payload() data: { id: string }) {
+    return this.inboundOrdersService.retry(data.id);
+  }
 
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {

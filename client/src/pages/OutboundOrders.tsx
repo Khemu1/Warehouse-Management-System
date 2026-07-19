@@ -9,6 +9,7 @@ import {
   useOutboundOrders,
   useCancelOutboundOrder,
   useConfirmOutboundOrder,
+  useRetryOutboundOrder,
 } from "@/hooks/use-outbound-orders";
 import { useWarehouses } from "@/hooks/use-warehouses";
 import { WarehouseCombobox } from "@/components/inventory/warehouse/WarehouseCombobox";
@@ -30,6 +31,7 @@ export default function OutboundOrders() {
   const { data, isLoading } = useOutboundOrders(page, 10, search, warehouseId);
   const cancelOrder = useCancelOutboundOrder();
   const confirmOrder = useConfirmOutboundOrder();
+  const retryOrder = useRetryOutboundOrder();
 
   const orders = data?.items ?? [];
   const meta = data?.meta;
@@ -82,6 +84,7 @@ export default function OutboundOrders() {
           isLoading={isLoading}
           onView={(order) => dialog.open("view-outbound", order)}
           onConfirm={(order) => confirmOrder.mutate(order.id)}
+          onRetry={(id) => retryOrder.mutate(id)}
           onCancel={(id) => cancelOrder.mutate(id)}
         />
         {meta && (

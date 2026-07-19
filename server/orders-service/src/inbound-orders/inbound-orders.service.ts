@@ -212,6 +212,43 @@ export class InboundOrdersService {
     };
   }
 
+  async retry(order_id: string) {
+    const order = await this.inboundOrderRepo.findOne({
+      where: { id: order_id },
+      relations: { inbound_items: true },
+    });
+
+    if (!order) throw new NotFoundException(`Order ${order_id} not found`);
+    if (order.status !== InBoundOrderStatus.NEEDS_ATTENTION) {
+      throw new ConflictException('Only needs_attention orders can be retried');
+    }
+
+    // Reset failures
+    await this.failureRepo.update(
+      { order_id, resolved: false },
+      { resolved: true },
+    );
+
+    // Reset status and re-queue
+    await this.inboundOrderRepo.update(
+      { id: order_id },
+      { status: InBoundOrderStatus.RECEIVING },
+    );
+
+    const items = order.inbound_items.map((item) => ({
+      item_id: item.id,
+      received_quantity: item.received_quantity || item.expected_quantity,
+    }));
+
+    await this.orderProcessingQueue.add(
+      'process_receive',
+      { order_id, items },
+      { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+    );
+
+    return { order_id, status: 'RECEIVING', message: 'Retry queued' };
+  }
+
   async cancel(id: string) {
     const order = await this.findOne(id);
     if (order.status !== InBoundOrderStatus.PENDING) {

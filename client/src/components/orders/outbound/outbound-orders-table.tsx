@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LuEllipsis, LuCheck, LuEye, LuTruck } from "react-icons/lu";
+import { LuEllipsis, LuCheck, LuEye, LuTruck, LuRefreshCw } from "react-icons/lu";
 import { GoXCircle } from "react-icons/go";
 
 import type { OutboundOrder } from "@/types/orders/outbound";
@@ -35,6 +35,7 @@ interface Props {
   isLoading: boolean;
   onView: (order: OutboundOrder) => void;
   onConfirm: (order: OutboundOrder) => void;
+  onRetry: (order_id: string) => void;
   onCancel: (id: string) => void;
 }
 
@@ -43,6 +44,7 @@ export function OutboundOrdersTable({
   isLoading,
   onView,
   onConfirm,
+  onRetry,
   onCancel,
 }: Props) {
   if (isLoading) {
@@ -158,6 +160,11 @@ export function OutboundOrdersTable({
                   {order.status === "reserved" && (
                     <DropdownMenuItem onClick={() => onConfirm(order)}>
                       <LuCheck className="mr-2 h-4 w-4" /> Confirm
+                    </DropdownMenuItem>
+                  )}
+                  {order.status === "needs_attention" && (
+                    <DropdownMenuItem onClick={() => onRetry(order.id)}>
+                      <LuRefreshCw className="mr-2 h-4 w-4" /> Retry
                     </DropdownMenuItem>
                   )}
                   {(order.status === "reserved" ||

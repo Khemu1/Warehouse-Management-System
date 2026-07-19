@@ -78,6 +78,11 @@ export class OutboundOrdersController {
     await this.outboundOrdersService.checkAllReleased(data.order_id);
   }
 
+  @MessagePattern('retryOutboundOrder')
+  async retry(@Payload() data: { id: string }) {
+    return this.outboundOrdersService.retry(data.id);
+  }
+
   @EventPattern('outboundItemStockFailed')
   async markAttention(
     @Payload()

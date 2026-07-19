@@ -32,6 +32,10 @@ export class PaymentController {
   async getPaymentStats() {
     return this.paymentService.getStats();
   }
+  @MessagePattern('retryPayment')
+  async retry(@Payload() data: { id: string }) {
+    return this.paymentService.retry(data.id);
+  }
 
   @MessagePattern('health.check')
   checkHealth(): { status: string; service: string; timestamp: string } {

@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,18 +11,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch, isAPIError } from "@/services";
+import { useOutboundOrderDetails } from "@/hooks/use-outbound-orders";
 import {
   LuBox,
   LuCreditCard,
   LuTruck,
   LuSmartphone,
   LuShieldCheck,
+  LuLoader,
 } from "react-icons/lu";
+import { GoAlert } from "react-icons/go";
+
 import { useState } from "react";
-import { apiFetch } from "@/services";
-import { useOutboundOrderDetails } from "@/hooks/use-outbound-orders";
-import { Label } from "@/components/ui/label";
 
 interface ExistingPayment {
   id: string;
@@ -58,11 +61,11 @@ export default function Pay() {
   const { orderId } = useParams();
   const [paid, setPaid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("visa");
+  const queryClient = useQueryClient();
 
   const { data: order, isLoading: orderLoading } =
     useOutboundOrderDetails(orderId);
 
-  // Check if payment already exists
   const { data: existingPayment, isLoading: paymentLoading } = useQuery({
     queryKey: ["payment-for-order", orderId],
     queryFn: () => apiFetch<ExistingPayment>(`/payments/order/${orderId}`),
@@ -81,10 +84,46 @@ export default function Pay() {
       }),
     onSuccess: () => {
       setPaid(true);
+      queryClient.invalidateQueries({
+        queryKey: ["payment-for-order", orderId],
+      });
       toast({
         title: "Payment Successful",
         description: "Your payment has been processed.",
       });
+    },
+    onError: (error) => {
+      if (isAPIError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Payment Failed",
+          description: error.message,
+        });
+      }
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: () =>
+      apiFetch(`/payments/${existingPayment?.id}/retry`, { method: "POST" }),
+    onSuccess: () => {
+      setPaid(true);
+      queryClient.invalidateQueries({
+        queryKey: ["payment-for-order", orderId],
+      });
+      toast({
+        title: "Payment Successful",
+        description: "Your payment has been processed.",
+      });
+    },
+    onError: (error) => {
+      if (isAPIError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Retry Failed",
+          description: error.message,
+        });
+      }
     },
   });
 
@@ -105,9 +144,99 @@ export default function Pay() {
     );
   }
 
-  // Already paid
-  if (paid || existingPayment) {
+  // Existing payment screen
+  if (existingPayment) {
     const payment = existingPayment;
+    const isConfirmed = payment.status === "confirmed";
+    const isFailed = payment.status === "failed";
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8">
+            <div
+              className={`
+              mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4
+              ${isConfirmed ? "bg-green-100" : isFailed ? "bg-red-100" : "bg-amber-100"}
+            `}
+            >
+              {isConfirmed ? (
+                <LuShieldCheck className="h-7 w-7 text-green-600" />
+              ) : isFailed ? (
+                <GoAlert className="h-7 w-7 text-red-600" />
+              ) : (
+                <LuLoader className="h-7 w-7 text-amber-600 animate-spin" />
+              )}
+            </div>
+
+            <h2 className="text-lg font-bold">
+              {isConfirmed
+                ? "Payment Confirmed"
+                : isFailed
+                  ? "Payment Failed"
+                  : "Payment Pending"}
+            </h2>
+
+            <div className="rounded-md bg-muted p-3 mt-4 text-left space-y-1">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Amount</span>
+                <span className="font-medium">
+                  ${Number(payment.total_amount).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Method</span>
+                <span className="font-medium capitalize">
+                  {payment.payment_method}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <Badge
+                  variant={
+                    isConfirmed
+                      ? "received"
+                      : isFailed
+                        ? "needs_attention"
+                        : "pending"
+                  }
+                >
+                  {payment.status}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Date</span>
+                <span className="font-medium">
+                  {new Date(payment.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+
+            {!isConfirmed && (
+              <Button
+                className="mt-4 w-full"
+                onClick={() => retryMutation.mutate()}
+                disabled={retryMutation.isPending}
+              >
+                <LuCreditCard className="mr-2 h-5 w-5" />
+                {retryMutation.isPending ? "Processing..." : "Retry Payment"}
+              </Button>
+            )}
+
+            {isFailed && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Your payment was declined. Please try again or use a different
+                method.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Already paid (just completed)
+  if (paid) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md text-center">
@@ -115,45 +244,11 @@ export default function Pay() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 mb-4">
               <LuShieldCheck className="h-7 w-7 text-green-600" />
             </div>
-            <h2 className="text-lg font-bold">
-              Payment {payment ? "Already" : ""} Confirmed
-            </h2>
-            {payment ? (
-              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <p className="font-semibold">
-                  This order has already been paid.
-                </p>
-                <div className="rounded-md bg-muted p-3 mt-3 text-left space-y-1">
-                  <div className="flex justify-between">
-                    <span>Amount</span>
-                    <span className="font-medium text-foreground">
-                      ${Number(payment.total_amount).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Method</span>
-                    <span className="font-medium text-foreground capitalize">
-                      {payment.payment_method}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Status</span>
-                    <Badge variant="received">{payment.status}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Date</span>
-                    <span className="font-medium text-foreground">
-                      {new Date(payment.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-2">
-                Your payment of ${Number(order?.total_amount).toFixed(2)} has
-                been processed.
-              </p>
-            )}
+            <h2 className="text-lg font-bold">Payment Confirmed</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Your payment of ${Number(order?.total_amount).toFixed(2)} has been
+              processed.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -177,6 +272,7 @@ export default function Pay() {
     );
   }
 
+  // New payment form
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -192,7 +288,6 @@ export default function Pay() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Order Summary */}
           <div className="rounded-md bg-muted p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-muted-foreground">Warehouse</span>
@@ -243,7 +338,6 @@ export default function Pay() {
             <Badge variant="pending">Awaiting Payment</Badge>
           </div>
 
-          {/* Payment Method */}
           <div>
             <p className="text-sm font-medium mb-3">Payment Method</p>
             <RadioGroup

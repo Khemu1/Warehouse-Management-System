@@ -7,6 +7,8 @@ import { SeederOptions } from "typeorm-extension";
 
 const isProd = process.env.NODE_ENV === "production";
 
+console.log("is_prod ", isProd);
+
 if (isProd) {
   const { register } = require("tsconfig-paths");
   register({

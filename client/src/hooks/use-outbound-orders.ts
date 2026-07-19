@@ -111,3 +111,23 @@ export function useCancelOutboundOrder() {
     },
   });
 }
+export function useRetryOutboundOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/outbound-orders/${id}/retry`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["outbound-orders"] });
+      qc.invalidateQueries({ queryKey: ["outbound-order"] });
+      toast({ title: "Retry queued — processing in background" });
+    },
+    onError: (error) => {
+      if (isAPIError(error))
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+    },
+  });
+}

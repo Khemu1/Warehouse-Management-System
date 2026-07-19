@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateOutboundOrderDto } from '@shared/dtos/outbound-order.dtos';
 import { OutboundOrder } from './entities/outbound-order.entity';
 import { OutboundOrderItem } from './entities/outbound-order-item.entity';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { OutboundOrderStatus, PaymentStatus } from '@shared/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -305,6 +305,43 @@ export class OutboundOrdersService {
       status: 'RESERVING',
       message: 'Order is being processed in the background',
     };
+  }
+
+  async retry(order_id: string) {
+    const order = await this.outboundOrderRepo.findOne({
+      where: { id: order_id },
+      relations: { outbound_items: true },
+    });
+
+    if (!order) throw new NotFoundException(`Order ${order_id} not found`);
+    if (order.status !== OutboundOrderStatus.NEEDS_ATTENTION) {
+      throw new ConflictException('Only needs_attention orders can be retried');
+    }
+
+    await this.failureRepo.update(
+      { order_id, resolved: false },
+      { resolved: true },
+    );
+
+    // Determine which stage it failed at and retry
+    const items = order.outbound_items.map((item) => ({
+      item_id: item.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+    }));
+
+    await this.outboundOrderRepo.update(
+      { id: order_id },
+      { status: OutboundOrderStatus.RESERVING },
+    );
+
+    await this.orderProcessingQueue.add(
+      'process_reserve',
+      { order_id, items },
+      { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+    );
+
+    return { order_id, status: 'RESERVING', message: 'Retry queued' };
   }
 
   async confirm(orderId: string, staffUserId: string) {

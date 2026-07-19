@@ -15,7 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LuEllipsis, LuPackageCheck, LuEye, LuTruck } from "react-icons/lu";
+import {
+  LuEllipsis,
+  LuPackageCheck,
+  LuEye,
+  LuTruck,
+  LuRefreshCw,
+} from "react-icons/lu";
 import type { InboundOrder } from "@/types/orders/inbound";
 import { IoCloseCircleSharp } from "react-icons/io5";
 
@@ -24,6 +30,7 @@ interface Props {
   isLoading: boolean;
   onView: (order: InboundOrder) => void;
   onReceive: (order: InboundOrder) => void;
+  onRetry: (order_id: string) => void;
   onCancel: (id: string) => void;
 }
 
@@ -32,6 +39,7 @@ export function InboundOrdersTable({
   isLoading,
   onView,
   onReceive,
+  onRetry,
   onCancel,
 }: Props) {
   if (isLoading) {
@@ -133,6 +141,11 @@ export function InboundOrdersTable({
                   <DropdownMenuItem onClick={() => onView(order)}>
                     <LuEye className="mr-2 h-4 w-4" /> View Details
                   </DropdownMenuItem>
+                  {order.status === "needs_attention" && (
+                    <DropdownMenuItem onClick={() => onRetry(order.id)}>
+                      <LuRefreshCw className="mr-2 h-4 w-4" /> Retry
+                    </DropdownMenuItem>
+                  )}
                   {order.status === "pending" && (
                     <>
                       <DropdownMenuItem onClick={() => onReceive(order)}>
