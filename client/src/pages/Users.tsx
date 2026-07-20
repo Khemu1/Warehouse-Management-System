@@ -21,10 +21,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/data-table/pagination";
 import { AppDialog } from "@/components/dialogs/app-dialog";
 import { useDialogStore } from "@/stores/dialog-store";
-import { useUsers, useCreateUser, useUpdateUser } from "@/hooks/use-users";
+import {
+  useUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+} from "@/hooks/use-users";
 import { UserForm } from "@/components/users/user-form";
 import type { EditUser, NewUser, User } from "@/types/users";
-import { LuPlus, LuSearch, LuEllipsis, LuPencil } from "react-icons/lu";
+import {
+  LuPlus,
+  LuSearch,
+  LuEllipsis,
+  LuPencil,
+  LuTrash2,
+} from "react-icons/lu";
 
 export default function Users() {
   const [page, setPage] = useState(1);
@@ -34,6 +45,7 @@ export default function Users() {
   const { data, isLoading } = useUsers(page, 10, search);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
 
   const users = data?.items ?? [];
   const meta = data?.meta;
@@ -140,6 +152,12 @@ export default function Users() {
                           onClick={() => dialog.open("user-form", user)}
                         >
                           <LuPencil className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>{" "}
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => deleteUser.mutate(user.id)}
+                        >
+                          <LuTrash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

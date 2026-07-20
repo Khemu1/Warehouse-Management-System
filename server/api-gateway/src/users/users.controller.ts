@@ -8,6 +8,8 @@ import {
   Query,
   ParseUUIDPipe,
   Inject,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { AllowedRoles } from '@shared/decorators/roles.decorator';
 import { CreateUserDto, UpdateUserDto } from '@shared/dtos/user.dtos';
@@ -87,5 +89,16 @@ export class UsersController {
   @ApiResponse({ status: 404, type: ApiErrorResponse })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
     return this.authClient.send('updateUser', { id, ...dto });
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @AllowedRoles(Roles.ADMIN)
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 204, description: 'Deleted' })
+  @ApiResponse({ status: 404, type: ApiErrorResponse })
+  delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.authClient.send('deleteUser', { id });
   }
 }

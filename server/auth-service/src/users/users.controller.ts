@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { Roles } from '@shared/types';
-import { UpdateUserMessageDto,CreateUserDto } from '@shared/dtos/user.dtos';
+import { UpdateUserMessageDto, CreateUserDto } from '@shared/dtos/user.dtos';
 
 @Controller()
 export class UsersController {
@@ -34,5 +34,10 @@ export class UsersController {
     data: UpdateUserMessageDto,
   ) {
     return this.usersService.update(data);
+  }
+  @MessagePattern('deleteUser')
+  async delete(@Payload() data: { id: string }) {
+    await this.usersService.delete(data.id);
+    return {};
   }
 }

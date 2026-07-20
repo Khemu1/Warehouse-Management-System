@@ -78,3 +78,21 @@ export function useUpdateUser() {
 
   return { ...mutation, apiError };
 }
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/users/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      toast({ title: "User deleted" });
+    },
+    onError: (error) => {
+      if (isAPIError(error))
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+    },
+  });
+}
